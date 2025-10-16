@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  rstudio:
+    build: .
+    container_name: rstudio-bioinfo
+    ports:
+      - "8787:8787"
+    environment:
+      - PASSWORD=rstudio
+    volumes:
+      - ./src:/home/rstudio
