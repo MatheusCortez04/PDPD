@@ -2,10 +2,36 @@ library(here)
 library(igraph)
 library(diffuStats)
 library(dplyr)
+library(Matrix)
 
-print("Bibliotecas carregadas com sucesso.")
-print("Realizando Leitura da PPI")
+cat("Bibliotecas carregadas com sucesso.")
+cat("Realizando Leitura da PPI\n")
 
 ppi_df  = read.csv(here("Data","PPI_gysi.csv"), sep=",")
-ppi_only_proteins_df = select(ppi_df,proteinA_entrezid,proteinB_entrezid)
-write.csv(ppi_only_proteins_df,"Data/PPI_ONLY_PROTEINS.CSV")
+cat("Leitura da PPI Finalizada\n")
+cat("Realizando criacao do dataframe somente com as proteinas\n")
+
+ppi_only_proteins_df =  ppi_df %>% select(proteinA_entrezid,proteinB_entrezid)
+print("Dataframe somente com as proteinas salvo com sucesso\n")
+
+print("Criando Grafo com o dataframe contendo somente as proteinas\n")
+graph <- graph_from_data_frame(ppi_only_proteins_df, directed = FALSE)
+
+cat("Calculando o kernel Laplaciana para o seu grafo...\n")
+ K_laplaciana = regularisedLaplacianKernel(graph,normalized = TRUE)
+
+cat("Kernel calculado com sucesso!\n\n")
+write.csv(K_laplaciana, file = "KERNEL_TESTE.csv")
+cat("--- Iniciando conversão para Matriz Esparsa  ---\n")
+zeros_exatos <- sum(kernel_denso == 0)
+cat(paste("... Encontrados", zeros_exatos, "zeros exatos na matriz densa.\n"))
+
+cat("... Removendo zeros exatos da estrutura (drop0)\n")
+kernel_esparso <- drop0(K_laplaciana)
+saveRDS(K_laplaciana, file = "KERNEL_TESTE_ESPARSO.rds")
+cat("Arquivo KERNEL_TESTE_ESPARSO.rds salvo com sucesso.\n\n")
+
+cat("--- Comparação de Tamanho em Memória ---\n")
+print(paste("Tamanho do Kernel DENSO:", format(object.size(kernel_denso), units = "auto")))
+print(paste("Tamanho do Kernel ESPARSO:", format(object.size(kernel_esparso), units = "auto")))
+cat("----------------------------------------\n\n")
