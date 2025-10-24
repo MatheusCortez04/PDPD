@@ -9,4 +9,6 @@ services:
     environment:
       - PASSWORD=rstudio
     volumes:
-      - ./src:/home/rstudio
+      - .:/home/rstudio
+    tty: true 
+    stdin_open: true
