@@ -5,17 +5,45 @@ library(dplyr)
 source(here("src","Utils","graph.R"))
 
 source(here("src","Utils","kernels.R"))
-
-
+source(here("src","Utils","utils.R"))
 main= function(){
-    cat("Libraries loaded successfully.")
-    cat("Reading PPI data...\n")
+    cat("\nLibraries loaded successfully.\n")
+    while(TRUE){
+        clear_console()
+        cat("--- R Kernel Generation Menu ---\n\n")
+        cat("Select a kernel to generate:\n")
+        cat(" [1] Diffusion Kernel\n")
+        cat(" [2] P-Step Kernel\n")
+        cat(" [3] Regularised Laplacian Kernel\n")
+        cat(" [4] Commute Time Kernel\n")
+        cat(" [5] Inverse Cosine Kernel\n")
+        cat("\n [q] Quit Application\n\n")
+    input =  readline(prompt = "Enter your choice: ")
+
+    is_valid_input =validate_input(input)
+    if(!is_valid_input){
+        cat("\n[Error] Invalid option. Please try again.\n")
+        Sys.sleep(1.5)
+        next
+    }
+    if( toupper(trimws(input))=="Q"){
+        break
+    }
     ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
     cat("PPI reading complete.\n")
-    cat("Realizando criacao do dataframe somente com as proteinas\n")
+    cat("Creating dataframe with only proteins\n")
     ppi_only_proteins_df =  ppi_df %>% select(proteinA_entrezid,proteinB_entrezid)
-    graph = generate_graph_from_dataframe(ppi_only_proteins_df)
-    difussion_kernel = generate_difussion_kernel(graph)
-    pstep_kernel = generate_pstep_kernel(graph)
-}
+    ppi_graph = generate_graph_from_dataframe(ppi_only_proteins_df)
+    kernel_function_mapper[[input]](ppi_graph)
+    
+    }
+
+    q(save="no")
+    }
+
+
+
+
+
+
 
