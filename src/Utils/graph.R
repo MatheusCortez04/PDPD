@@ -1,9 +1,8 @@
 library(igraph)
 
 generate_graph_from_dataframe = function(dataframe){
-print("Criando Grafo com o dataframe:")
-print(summary(dataframe))
+cat("Creating graph from dataframe:\n")
 graph <- graph_from_data_frame(dataframe, directed = FALSE)
-print(" Grafo criado com sucesso!")
+print("Graph created successfully!")
 return(graph)
 }
