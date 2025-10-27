@@ -1,4 +1,6 @@
 library(diffuStats)
+
+source(here("src","Utils","utils.R"))
 generate_difussion_kernel= function(graph,normalized=TRUE,save_rdata=TRUE){
     output_path="diffusion_kernel"
     path_csv = here("src","Data","Kernels",paste0(output_path, ".csv"))
@@ -9,11 +11,12 @@ generate_difussion_kernel= function(graph,normalized=TRUE,save_rdata=TRUE){
 
     cat("Diffusion kernel calculated successfully!\n\n")
     write.csv(diffusion_kernel, file =path_csv)
-    cat("Diffusion kernel saved to file:", path_csv, "\n")
-
+    cat("Csv file  saved to:", path_csv, "\n")
+    Sys.sleep(1.5)
     if(save_rdata){
         save(diffusion_kernel, file = path_rdata)
         cat("R object 'diffusion_kernel' saved to:", path_rdata, "\n")
+        Sys.sleep(1.5)
     }
    invisible(diffusion_kernel)
 }
@@ -27,11 +30,12 @@ generate_pstep_kernel = function(graph,step=5,save_rdata=TRUE){
     pstep_kernel = pStepKernel(graph,p=step)
     cat("p-step kernel calculated successfully!\n\n")
     write.csv(pstep_kernel, file =path_csv)
-    cat("p-step kernel saved to file:", path_csv, "\n")
-
+    cat("Csv file  saved to:", path_csv, "\n")
+    Sys.sleep(1.5)
     if(save_rdata){
         save(pstep_kernel, file = path_rdata)
         cat("R object 'pstep_kernel' saved to:", path_rdata, "\n")
+        Sys.sleep(1.5)
     }
     invisible(pstep_kernel)
 
@@ -44,10 +48,14 @@ generate_regularised_laplacian_kernel = function(graph,normalized=TRUE,save_rdat
     cat("Calculating regularised laplacian kernel for the graph...\n")
     regularised_laplacian_kernel = regularisedLaplacianKernel(graph,normalized)
     cat("Regularised laplacian kernel calculated successfully!\n\n")
+    
     write.csv(regularised_laplacian_kernel, file =path_csv)
+    cat("Csv file  saved to:", path_csv, "\n")
+    Sys.sleep(1.5)
     if(save_rdata){
         save(regularised_laplacian_kernel, file = path_rdata)
         cat("R object 'regularised_laplacian_kernel' saved to:", path_rdata, "\n")
+        Sys.sleep(1.5)
     }
      invisible(regularised_laplacian_kernel)
 }
@@ -60,9 +68,12 @@ generate_commute_time_kernel = function(graph,normalized=TRUE,save_rdata=TRUE){
     commute_time_kernel = commuteTimeKernel(graph,normalized)
     cat("Commute time kernel calculated successfully!\n\n")
     write.csv(commute_time_kernel, file =path_csv)
+    cat("Csv file  saved to:", path_csv, "\n")
+    Sys.sleep(1.5)
     if(save_rdata){
         save(commute_time_kernel, file = path_rdata)
-        cat("Commute time kernel saved to file:", path_csv, "\n")
+        cat("R object 'commute_time_kernel' saved to:", path_rdata, "\n")
+        Sys.sleep(1.5)
     }
      invisible(commute_time_kernel)
 }
@@ -74,9 +85,66 @@ generate_inverse_cosine_kernel = function(graph,save_rdata=TRUE){
      cat("Calculating inverse cosine kernel for the graph...\n")
     inverse_cosine_kernel = inverseCosineKernel(graph)
     cat("Inverse cosine kernel calculated successfully!\n\n")
+    cat("Csv file  saved to:", path_csv, "\n")
+    Sys.sleep(1.5)
     if(save_rdata){
         save(inverse_cosine_kernel, file = path_rdata)
         cat("R object 'inverse_cosine_kernel' saved to:", path_rdata, "\n")
+        Sys.sleep(1.5)
     }
      invisible(inverse_cosine_kernel)
 }
+
+
+    kernel_function_mapper <- list(
+        '1' = function(graph) {
+            cat("\n--- Generating Diffusion Kernel ---\n")
+            save_rdata = readline(prompt = "Enter save RData (default TRUE): ")
+            is_valid_save_rdata=  is_valid_input_boolean(save_rdata)
+            if(!is_valid_save_rdata){
+                 cat("\n--- Invalid input. Using default value ---\n")
+               save_rdata = TRUE
+            }
+            generate_difussion_kernel(graph,save_rdata=save_rdata)
+        },
+        '2' = function(graph) {
+            cat("\n--- Generating P-Step Kernel ---\n")
+            step_input = readline(prompt = "Enter number of steps (default 5): ")
+            save_rdata = readline(prompt = "Enter save RData (default TRUE): ")
+            is_valid_save_rdata=  is_valid_input_boolean(save_rdata)
+            if(!is_valid_save_rdata){
+                cat("\n--- Invalid input. Using default value ---\n")
+                save_rdata = TRUE
+            }
+            step <- as.integer(step_input)
+            if (is.na(step) || step <= 0) { 
+                step <- 5
+                cat("(Using default: 5 steps)\n")
+            }
+            generate_pstep_kernel(graph, step = step,save_rdata)
+        },
+        '3' = function(graph) {
+            cat("\n--- Generating Regularised Laplacian Kernel ---\n")
+            save_rdata = readline(prompt = "Enter save RData (default TRUE): ")
+            is_valid_save_rdata=  is_valid_input_boolean(save_rdata)
+            if(!is_valid_save_rdata){
+                cat("\n--- Invalid input. Using default value ---\n")
+                save_rdata = TRUE
+            }
+            generate_regularised_laplacian_kernel(graph)
+        },
+        '4' = function(graph) {
+            cat("\n--- Generating Commute Time Kernel ---\n")
+            generate_commute_time_kernel(graph)
+        },
+        '5' = function(graph) {
+            cat("\n--- Generating Inverse Cosine Kernel ---\n")
+            save_rdata = readline(prompt = "Enter save RData (default TRUE): ")
+            is_valid_save_rdata=  is_valid_input_boolean(save_rdata)
+            if(!is_valid_save_rdata){
+                cat("\n--- Invalid input. Using default value ---\n")
+                save_rdata = TRUE
+            }
+            generate_inverse_cosine_kernel(graph,save_rdata)
+        }
+    )

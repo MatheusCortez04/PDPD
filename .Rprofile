@@ -8,7 +8,4 @@ if(!kernel_dir_already_exists){
     dir.create(kernel_dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
     dir.create(kernel_Rdata_dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
 }
-
-
-
 main()
