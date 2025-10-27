@@ -44,7 +44,7 @@ generate_regularised_laplacian_kernel = function(graph,normalized=TRUE,save_rdat
     cat("Calculating regularised laplacian kernel for the graph...\n")
     regularised_laplacian_kernel = regularisedLaplacianKernel(graph,normalized)
     cat("Regularised laplacian kernel calculated successfully!\n\n")
-
+    write.csv(regularised_laplacian_kernel, file =path_csv)
     if(save_rdata){
         save(regularised_laplacian_kernel, file = path_rdata)
         cat("R object 'regularised_laplacian_kernel' saved to:", path_rdata, "\n")
@@ -59,6 +59,7 @@ generate_commute_time_kernel = function(graph,normalized=TRUE,save_rdata=TRUE){
     cat("Calculating commute time kernel for the graph...\n")
     commute_time_kernel = commuteTimeKernel(graph,normalized)
     cat("Commute time kernel calculated successfully!\n\n")
+    write.csv(commute_time_kernel, file =path_csv)
     if(save_rdata){
         save(commute_time_kernel, file = path_rdata)
         cat("Commute time kernel saved to file:", path_csv, "\n")
