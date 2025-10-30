@@ -1,5 +1,5 @@
 library(diffuStats)
-
+library(igraph)
 source(here("src","Utils","utils.R"))
 generate_difussion_kernel= function(graph,normalized=TRUE,save_rdata=TRUE){
     output_path="diffusion_kernel"
@@ -95,56 +95,88 @@ generate_inverse_cosine_kernel = function(graph,save_rdata=TRUE){
      invisible(inverse_cosine_kernel)
 }
 
-
-    kernel_function_mapper <- list(
-        '1' = function(graph) {
-            cat("\n--- Generating Diffusion Kernel ---\n")
-            save_rdata = readline(prompt = "Enter save RData (default TRUE): ")
-            is_valid_save_rdata=  is_valid_input_boolean(save_rdata)
-            if(!is_valid_save_rdata){
-                 cat("\n--- Invalid input. Using default value ---\n")
-               save_rdata = TRUE
-            }
-            generate_difussion_kernel(graph,save_rdata=save_rdata)
-        },
-        '2' = function(graph) {
-            cat("\n--- Generating P-Step Kernel ---\n")
-            step_input = readline(prompt = "Enter number of steps (default 5): ")
-            save_rdata = readline(prompt = "Enter save RData (default TRUE): ")
-            is_valid_save_rdata=  is_valid_input_boolean(save_rdata)
-            if(!is_valid_save_rdata){
-                cat("\n--- Invalid input. Using default value ---\n")
-                save_rdata = TRUE
-            }
-            step <- as.integer(step_input)
-            if (is.na(step) || step <= 0) { 
-                step <- 5
-                cat("(Using default: 5 steps)\n")
-            }
-            generate_pstep_kernel(graph, step = step,save_rdata)
-        },
-        '3' = function(graph) {
-            cat("\n--- Generating Regularised Laplacian Kernel ---\n")
-            save_rdata = readline(prompt = "Enter save RData (default TRUE): ")
-            is_valid_save_rdata=  is_valid_input_boolean(save_rdata)
-            if(!is_valid_save_rdata){
-                cat("\n--- Invalid input. Using default value ---\n")
-                save_rdata = TRUE
-            }
-            generate_regularised_laplacian_kernel(graph)
-        },
-        '4' = function(graph) {
-            cat("\n--- Generating Commute Time Kernel ---\n")
-            generate_commute_time_kernel(graph)
-        },
-        '5' = function(graph) {
-            cat("\n--- Generating Inverse Cosine Kernel ---\n")
-            save_rdata = readline(prompt = "Enter save RData (default TRUE): ")
-            is_valid_save_rdata=  is_valid_input_boolean(save_rdata)
-            if(!is_valid_save_rdata){
-                cat("\n--- Invalid input. Using default value ---\n")
-                save_rdata = TRUE
-            }
-            generate_inverse_cosine_kernel(graph,save_rdata)
+kernel_function_mapper <- list(
+    '1' = function(graph) {
+        cat("\n--- Generating Diffusion Kernel ---\n")
+        save_rdata = readline(prompt = "Enter save RData (default TRUE): ")
+        is_valid_save_rdata=  is_valid_input_boolean(save_rdata)
+        if(!is_valid_save_rdata){
+             cat("\n--- Invalid input. Using default value ---\n")
+           save_rdata = TRUE
         }
-    )
+        generate_difussion_kernel(graph,save_rdata=save_rdata)
+    },
+    '2' = function(graph) {
+        cat("\n--- Generating P-Step Kernel ---\n")
+        step_input = readline(prompt = "Enter number of steps (default 5): ")
+        save_rdata = readline(prompt = "Enter save RData (default TRUE): ")
+        is_valid_save_rdata=  is_valid_input_boolean(save_rdata)
+        if(!is_valid_save_rdata){
+            cat("\n--- Invalid input. Using default value ---\n")
+            save_rdata = TRUE
+        }
+        step <- as.integer(step_input)
+        if (is.na(step) || step <= 0) { 
+            step <- 5
+            cat("(Using default: 5 steps)\n")
+        }
+        generate_pstep_kernel(graph, step = step,save_rdata)
+    },
+    '3' = function(graph) {
+        cat("\n--- Generating Regularised Laplacian Kernel ---\n")
+        save_rdata = readline(prompt = "Enter save RData (default TRUE): ")
+        is_valid_save_rdata=  is_valid_input_boolean(save_rdata)
+        if(!is_valid_save_rdata){
+            cat("\n--- Invalid input. Using default value ---\n")
+            save_rdata = TRUE
+        }
+        generate_regularised_laplacian_kernel(graph)
+    },
+    '4' = function(graph) {
+        cat("\n--- Generating Commute Time Kernel ---\n")
+        generate_commute_time_kernel(graph)
+    },
+    '5' = function(graph) {
+        cat("\n--- Generating Inverse Cosine Kernel ---\n")
+        save_rdata = readline(prompt = "Enter save RData (default TRUE): ")
+        is_valid_save_rdata=  is_valid_input_boolean(save_rdata)
+        if(!is_valid_save_rdata){
+            cat("\n--- Invalid input. Using default value ---\n")
+            save_rdata = TRUE
+        }
+        generate_inverse_cosine_kernel(graph,save_rdata)
+    }
+)
+
+validate_kernel_input = function(input){
+    valid_inputs = c("B","1","2","3","4","5")
+    return (toupper(trimws(input)) %in% valid_inputs)
+}
+
+generate_kernel_menu <- function() {
+    ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
+    cat("PPI reading complete.\n")
+    cat("Creating dataframe with only proteins\n")
+    ppi_only_proteins_df =  ppi_df %>% select(proteinA_entrezid,proteinB_entrezid)
+    ppi_graph = generate_graph_from_dataframe(ppi_only_proteins_df)
+  while (TRUE) {
+    clear_console()
+    cat("--- Kernel Generation Menu ---\n\n")
+    cat(" [1] Diffusion Kernel\n")
+    cat(" [2] P-Step Kernel\n")
+    cat(" [3] Regularised Laplacian Kernel\n")
+    cat(" [4] Commute Time Kernel\n")
+    cat(" [5] Inverse Cosine Kernel\n")
+    cat(" [b] Voltar\n\n")
+    input = readline(prompt = "Escolha o kernel: ")
+    is_valid = validate_kernel_input(input)
+    if (!is_valid) {
+      cat("\n[Erro] Opção inválida. Tente novamente.\n")
+      Sys.sleep(1.5)
+      next
+    }
+    if (toupper(trimws(input)) == "B") break
+
+     kernel_function_mapper[[input]](ppi_graph)
+  }
+}
