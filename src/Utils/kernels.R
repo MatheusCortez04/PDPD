@@ -167,8 +167,8 @@ generate_kernel_menu <- function() {
     cat(" [3] Regularised Laplacian Kernel\n")
     cat(" [4] Commute Time Kernel\n")
     cat(" [5] Inverse Cosine Kernel\n")
-    cat(" [b] Voltar\n\n")
-    input = readline(prompt = "Escolha o kernel: ")
+    cat(" [B] Back\n\n")
+    input = readline(prompt = "Choice option: ")
     is_valid = validate_kernel_input(input)
     if (!is_valid) {
       cat("\n[Erro] Opção inválida. Tente novamente.\n")
