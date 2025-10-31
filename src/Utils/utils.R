@@ -26,22 +26,5 @@ get_drug_nodes = function(drug_target_df){
     invisible(unique_drugs_in_df)
 }
 
-main_menu_mapper = function(){
-    cat("--- Main Menu ---\n\n")
-    cat(" [1] Gerar e Salvar Kernel\n")
-    cat(" [2] Scoring Droga-Doença\n")
-    cat(" [q] Sair\n\n")
-    input = readline(prompt = "Escolha a opção: ")
-    is_valid = validate_input_main(input)
-    if (!is_valid) {
-        cat("\n[Erro] Opção inválida. Tente novamente.\n")
-        Sys.sleep(1.5)
-        next
-    }
-    if (toupper(trimws(input)) == "Q") break
-    if (input == "1") gerar_kernel_menu()
-    if (input == "2") scoring_drug_disease_menu()
-}
-
 
 
