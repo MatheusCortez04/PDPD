@@ -2,6 +2,7 @@ library(here)
 source(here("src","Utils","utils.R"))
 
 generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,drug_nodes){
+  cat("\n--- Generating Drug Protein Matrix ---\n")
     output_path="drug_gene"
     path_csv = here("src","Data",paste0(output_path, ".csv"))
     path_rdata = here("src","Data",paste0(output_path, ".Rdata"))
@@ -32,3 +33,30 @@ generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,dru
 }
 
 
+
+scoring_drug_disease_menu = function(){
+  while(TRUE){
+    clear_console()
+    cat("--- Drug Score  Menu ---\n\n")
+    cat(" [1] Generate Drug Protein Matrix\n")
+    cat(" [B] Voltar\n\n")
+
+    input = readline(prompt = "Choice option: ")
+    if (toupper(trimws(input)) == "B") break
+
+     drug_function_mapper[[input]]()
+  }
+}
+
+drug_function_mapper <- list(
+    '1' = function() {
+        cat("\n--- Generating Drug X Protein Matrix  ---\n")
+        drug_target_df  = read.csv(here("src","Data","drug_targets_DrugBank_Gysi.csv"), sep=",")
+        cat("Drug Target file reading complete.\n")
+        ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
+        cat("PPI  file reading complete.\n")
+        protein_nodes = get_ppi_nodes(ppi_df)
+        drug_nodes= get_drug_nodes(drug_target_df)
+        generate_ordered_drug_protein_matrix(drug_target_df,protein_nodes,drug_nodes)
+    }
+)
