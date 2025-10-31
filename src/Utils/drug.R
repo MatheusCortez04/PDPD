@@ -43,7 +43,7 @@ scoring_drug_disease_menu = function(){
     clear_console()
     cat("--- Drug Score  Menu ---\n\n")
     cat(" [1] Generate Drug Protein Matrix\n")
-    cat(" [B] Voltar\n\n")
+    cat(" [B] Back\n\n")
 
     input = readline(prompt = "Choice option: ")
     if (toupper(trimws(input)) == "B") break
