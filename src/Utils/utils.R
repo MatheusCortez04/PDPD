@@ -26,5 +26,16 @@ get_drug_nodes = function(drug_target_df){
     invisible(unique_drugs_in_df)
 }
 
+load_rdata <- function(path_file) {
+  env <- new.env()
+  load(path_file, envir = env)
+  objs <- ls(env)
+  if(length(objs) != 1) {
+    stop("Mais de um objeto no arquivo RData")
+  }
+  return(env[[objs]])
+}
+
+
 
 
