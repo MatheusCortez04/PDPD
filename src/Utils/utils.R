@@ -35,7 +35,18 @@ load_rdata <- function(path_file) {
   }
   return(env[[objs]])
 }
+get_mdd_genes = function(){
+  major_depressivve_disorder_id = "C1269683"
+  score_filter = 0.6
+  disease_gene_df  = read.csv(here("src","Data","disease_genes.csv"), sep="\t")
+  disease_gene_df =disease_gene_df %>%
+    filter(diseaseid ==major_depressivve_disorder_id &
+     score>=score_filter) %>%
+     rename(gene_id=geneid,disease_id=diseaseid) %>% 
+     select(gene_id,disease_id,score)
+  invisible(disease_gene_df)
 
+}
 
 
 
