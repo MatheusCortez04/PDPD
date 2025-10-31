@@ -7,7 +7,7 @@ generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,dru
     path_csv = here("src","Data",paste0(output_path, ".csv"))
     path_rdata = here("src","Data",paste0(output_path, ".Rdata"))
 
-    matrix_final = drug_target_df %>% 
+    matrix_drug_protein = drug_target_df %>% 
     filter( entrez_id %in% protein_nodes) %>%
     distinct(drugbank_id, entrez_id) %>%
     mutate(
@@ -24,10 +24,14 @@ generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,dru
         id_expand = TRUE
     ) %>% arrange(drugbank_id)
 
-    write.csv(matrix_final, file =path_csv)
+    write.csv(matrix_drug_protein, file =path_csv,row.names=FALSE)
     cat("Csv file  saved to:", path_csv, "\n")
 
-    save(matrix_final, file = path_rdata)
+    matrix_drug_protein_numeric <- as.matrix(matrix_drug_protein[ , -1])
+    rownames(matrix_drug_protein_numeric) <- matrix_drug_protein$drugbank_id
+    storage.mode(matrix_drug_protein_numeric) <- "numeric"
+
+    save(matrix_drug_protein_numeric, file = path_rdata)
     cat("R object 'drug_target_df' saved to:", path_rdata, "\n")
 
 }
