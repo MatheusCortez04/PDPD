@@ -69,7 +69,12 @@ Para que os kernels sejam calculados corretamente é necessário que o arquivo c
 
 
 
+5.2  **Kernel Menu**
+    Este subMenu tem como objetivo gerar a matrix Droga X proteina  tanto como objeto RData quanto arquivo CSV
 
+5.2.1 A primeira opcao deste menu 'Generate Drug Protein Matrix' tem como objetivo gerar a matriz de Droga(Linha)XProteina(Coluna).Para que este arquivo seja criado é necessario deixar o arquivo que contem a relacao droga proteina dentro da pasta 'Drug' com o nome 'drug_targets_DrugBank_Gysi.csv' e o arquivo de saida terá o nome 'drug_gene' dentro da pasta 'Drug' 
+
+   
 
 
 ## Estrutura do Projeto
@@ -80,7 +85,7 @@ Para que os kernels sejam calculados corretamente é necessário que o arquivo c
     * `utils.R`:  Funções auxiliares usadas no script principal.
     * `...`: (Outros scripts R, se houver).
     * * `/Data`: Contém os conjuntos de dados brutos, como `PPI_network.csv` e `drug_targets_DrugBank_Gysi.csv`.
-* `Dockerfile`: Define a imagem Docker, instalando o R, as bibliotecas do sistema (como `libgmp-dev`) e as bibliotecas R (como `igraph`, `dplyr`, `tidyr`).
+* `Dockerfile`: Define a imagem Docker com o pacote 'tidyverse', instalando o R, as bibliotecas do sistema  R (como `igraph`, `dplyr`, `tidyr`).
 * `docker-compose.yml`: Orquestra a inicialização do container.
 
 ## Observações
