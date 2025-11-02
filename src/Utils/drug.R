@@ -43,6 +43,7 @@ scoring_drug_disease_menu = function(){
     clear_console()
     cat("--- Drug Score  Menu ---\n\n")
     cat(" [1] Generate Drug Protein Matrix\n")
+    cat(" [2] Generate Kernel Score \n")
     cat(" [B] Back\n\n")
 
     input = readline(prompt = "Choice option: ")
@@ -64,19 +65,56 @@ drug_function_mapper <- list(
         generate_ordered_drug_protein_matrix(drug_target_df,protein_nodes,drug_nodes)
     },
     '2' = function(){
-      cat("\n--- Generating and save Diseases Vector  ---\n")
-       bipolar_gene= get_bipolar_disorder_genes()
-
-            write.csv(result,"bipolar_gene.csv",)
+        
+        calculate_kernel_score()
     }
 )
 
+calculate_kernel_score = function(){
+drug_gene__matrix_file_path="drug_gene"
+kernel_file_names = c('diffusion_kernel','pstep_kernel','regularised_laplacian_kernel','commute_time_kernel','inverse_cosine_kernel')
+drug_protein_file_path = here("src","Data","Drug","RData",paste0(drug_gene__matrix_file_path, ".Rdata"))
+
+drug_protein_file_already_exists = file.exists(drug_protein_file_path)
+if(!drug_protein_file_already_exists){
+    cat("\n[Error]: Required file Drug gene matrix not found. This file is necessary to calculate the score. Would you like to create it now\n")
+     Sys.sleep(1.5)
+    return()
+}
+
+drug_protein_matrix = load_rdata(drug_protein_file_path)
+
+for (kernel_name in kernel_file_names){
+    cat("\n--- Generating Score Kernel ---\n")
+
+    kernel_path_rdata = here("src","Data","Kernels","RData", paste0(kernel_name, ".Rdata"))
+    kernel_file_exists = file.exists(kernel_path_rdata)
+    if(!kernel_file_exists){
+        cat("Kernel file",kernel_name,"no exists\n")
+        Sys.sleep(1)
+        next()
+    }
+
+    kernel = load_rdata(kernel_path_rdata)
+
+    cat("Starting matrix multiplication...\n")
+    score = drug_protein_matrix %*% kernel
+    cat("Matrix multiplication completed!\n")
+
+    output_file_path_Rdata = here("src","Data","Kernels","RData", paste0(kernel_name, "_score.Rdata"))
+    output_file_path_csv = here("src","Data","Kernels", paste0(kernel_name, "_score.csv"))
+    
+    write.csv(score, file = output_file_path_csv)
+    cat("CSV score saved to:", output_file_path_csv, "\n")
+
+    save(score, file = output_file_path_Rdata)
+    cat("R object score saved to:", output_file_path_Rdata, "\n")
+    
+    }
 
 
-        #  drug_protein = load_rdata(here("src","Data","drug_gene.Rdata"))
-        #  kernel  = load_rdata(here("src","Data","Kernels","RData","diffusion_kernel.Rdata"))
+} 
 
-        # result <- drug_protein %*% kernel
+ 
 
 
-        # write.csv(result,"teste.csv")
