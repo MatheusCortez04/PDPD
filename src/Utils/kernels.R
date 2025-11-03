@@ -84,6 +84,7 @@ generate_inverse_cosine_kernel = function(graph,save_rdata=TRUE){
 
      cat("Calculating inverse cosine kernel for the graph...\n")
     inverse_cosine_kernel = inverseCosineKernel(graph)
+    write.csv(inverse_cosine_kernel, file =path_csv)
     cat("Inverse cosine kernel calculated successfully!\n\n")
     cat("Csv file  saved to:", path_csv, "\n")
     Sys.sleep(1.5)
