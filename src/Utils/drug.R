@@ -83,7 +83,8 @@ if(!drug_protein_file_already_exists){
 }
 
 drug_protein_matrix = load_rdata(drug_protein_file_path)
-
+mdd_vector = build_protein_mdd_df()
+bipolar_vector = mdd_vector = build_protein_bipolar_df()
 for (kernel_name in kernel_file_names){
     cat("\n--- Generating Score Kernel ---\n")
 
@@ -97,18 +98,29 @@ for (kernel_name in kernel_file_names){
 
     kernel = load_rdata(kernel_path_rdata)
 
-    cat("Starting matrix multiplication...\n")
-    score = drug_protein_matrix %*% kernel
+    cat("Starting mdd matrix multiplication...\n")
+    mdd_score = drug_protein_matrix %*% kernel %*% mdd_vector$is_disease 
     cat("Matrix multiplication completed!\n")
-
-    output_file_path_Rdata = here("src","Data","Kernels","RData", paste0(kernel_name, "_score.Rdata"))
-    output_file_path_csv = here("src","Data","Kernels", paste0(kernel_name, "_score.csv"))
     
-    write.csv(score, file = output_file_path_csv)
-    cat("CSV score saved to:", output_file_path_csv, "\n")
+    output_mdd_file_path_Rdata = here("src","Data","Kernels","RData", paste0(kernel_name, "_mdd_score.Rdata"))
+    output_mdd_file_path_csv = here("src","Data","Kernels", paste0(kernel_name, "_mdd_score.csv"))
+    
+    write.csv(mdd_score, file = output_mdd_file_path_csv)
+    cat("CSV score saved to:", output_mdd_file_path_csv, "\n")
+    save(mdd_score, file = output_mdd_file_path_Rdata)
+    cat("R object score saved to:", output_mdd_file_path_Rdata, "\n")
 
-    save(score, file = output_file_path_Rdata)
-    cat("R object score saved to:", output_file_path_Rdata, "\n")
+
+    cat("Starting bipolar matrix multiplication...\n")
+    bipolar_score = drug_protein_matrix %*% kernel %*% bipolar_vector$is_disease 
+    cat("Matrix multiplication completed!\n")
+    output_bipolar_file_path_Rdata = here("src","Data","Kernels","RData", paste0(kernel_name, "_bipolar_score.Rdata"))
+    output_bipolar_file_path_csv = here("src","Data","Kernels", paste0(kernel_name, "_bipolar_score.csv"))
+    
+    write.csv(bipolar_score, file = output_bipolar_file_path_csv)
+    cat("CSV score saved to:", output_bipolar_file_path_csv, "\n")
+    save(bipolar_score, file = output_bipolar_file_path_Rdata)
+    cat("R object score saved to:", output_bipolar_file_path_Rdata, "\n")
     
     }
 
