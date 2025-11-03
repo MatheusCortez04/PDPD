@@ -46,11 +46,11 @@ get_mdd_genes = function(){
 
 }
 get_bipolar_disorder_genes = function(){
-  bipolar_disorder_disorder_id = "C0005586"
+  bipolar_disorder_id = "C0005586"
   score_filter = 0.6
   disease_gene_df  = read.csv(here("src","Data","disease_genes.csv"), sep="\t")
   disease_gene_df =disease_gene_df %>%
-    filter(diseaseid ==major_depressivve_disorder_id &
+    filter(diseaseid ==bipolar_disorder_id &
      score>=score_filter) %>%
      rename(gene_id=geneid,disease_id=diseaseid) %>% 
      select(gene_id,disease_id,score)
@@ -58,4 +58,33 @@ get_bipolar_disorder_genes = function(){
 
 }
 
+build_protein_mdd_df= function(){
+  ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
+  all_proteins = get_ppi_nodes(ppi_df)
+  mdd_genes = get_mdd_genes()
+  cat("Creating MDD protein DataFrame....")
+  mdd_vector = data.frame(gene_id=all_proteins)
+  mdd_vector <- mdd_vector %>% mutate(
+   is_disease = ifelse(gene_id %in% mdd_genes$gene_id, 1, 0))
 
+  write.csv(mdd_vector,file="teste.csv",row.names=FALSE )
+  invisible(mdd_vector)
+}
+
+
+build_protein_bipolar_df= function(){
+  ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
+  all_proteins = get_ppi_nodes(ppi_df)
+  bipolar_genes = get_bipolar_disorder_genes()
+  cat("Creating BD protein DataFrame....")
+  bipolar_vector = data.frame(gene_id=all_proteins)
+  bipolar_vector <- bipolar_vector %>% mutate(
+   is_disease = ifelse(gene_id %in% bipolar_genes$gene_id, 1, 0))
+  output_file_name ="bipolar_genes_vector"
+  output_file_path_csv = here("src","Data",paste0(output_file_name,".csv"))
+  output_file_path_rdata = here("src","Data",paste0(output_file_name,".Rdata"))
+  
+  write.csv(bipolar_vector,file=output_file_path_csv,row.names=FALSE)
+  save(bipolar_vector, file = output_file_path_rdata)
+  invisible(bipolar_vector)
+}
