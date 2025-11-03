@@ -14,7 +14,7 @@ if(!kernel_dir_already_exists){
     dir.create(kernel_Rdata_dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
 }
 if(!drug_dir_already_exists){
-    cat("\nKernel folder creating....")
+    cat("\nDrug folder creating....")
     dir.create(drug_dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
     dir.create(drug_Rdata_dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
 }
