@@ -67,7 +67,12 @@ build_protein_mdd_df= function(){
   mdd_vector <- mdd_vector %>% mutate(
    is_disease = ifelse(gene_id %in% mdd_genes$gene_id, 1, 0))
 
-  write.csv(mdd_vector,file="teste.csv",row.names=FALSE )
+  output_file_name ="mdd_genes_vector"
+  output_file_path_csv = here("src","Data",paste0(output_file_name,".csv"))
+  output_file_path_rdata = here("src","Data",paste0(output_file_name,".Rdata"))
+  
+  write.csv(mdd_vector,file=output_file_path_csv,row.names=FALSE )
+  save(mdd_vector, file = output_file_path_rdata)
   invisible(mdd_vector)
 }
 
