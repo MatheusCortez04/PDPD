@@ -106,10 +106,24 @@ for (kernel_name in kernel_file_names){
 
     )
     cat("Matrix multiplication completed!\n")
-    
-    output_mdd_file_path_Rdata = here("src","Data","Kernels","RData", paste0(kernel_name, "_mdd_score.Rdata"))
-    output_mdd_file_path_csv = here("src","Data","Kernels", paste0(kernel_name, "_mdd_score.csv"))
-    
+
+
+    kernel_score_dir = "src/Data/Kernels/Score/"
+    kernel_score_rdata_dir = "src/Data/Kernels/RData/Score"
+
+    output_mdd_file_path_Rdata = here(kernel_score_rdata_dir, paste0(kernel_name, "_mdd_score.Rdata"))
+    output_mdd_file_path_csv = here(kernel_score_dir, paste0(kernel_name, "_mdd_score.csv"))
+
+    kernel_score_dir_already_exists = dir.exists(kernel_score_dir)
+    kernel_score_rdata_dir_already_exists = dir.exists(kernel_score_rdata_dir)
+
+    if(!kernel_score_dir_already_exists){
+        dir.create(kernel_score_dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
+    }
+        if(!kernel_score_rdata_dir_already_exists){
+        dir.create(kernel_score_rdata_dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
+    }
+
     write.csv(mdd_score_df, file = output_mdd_file_path_csv,row.names=FALSE)
     cat("CSV score saved to:", output_mdd_file_path_csv, "\n")
     save(mdd_score_df, file = output_mdd_file_path_Rdata)
@@ -124,8 +138,8 @@ for (kernel_name in kernel_file_names){
 
     )
     cat("Matrix multiplication completed!\n")
-    output_bipolar_file_path_Rdata = here("src","Data","Kernels","RData", paste0(kernel_name, "_bipolar_score.Rdata"))
-    output_bipolar_file_path_csv = here("src","Data","Kernels", paste0(kernel_name, "_bipolar_score.csv"))
+    output_bipolar_file_path_Rdata = here(kernel_score_rdata_dir, paste0(kernel_name, "_bipolar_score.Rdata"))
+    output_bipolar_file_path_csv = here(kernel_score_dir, paste0(kernel_name, "_bipolar_score.csv"))
     
     write.csv(bipolar_score_df, file = output_bipolar_file_path_csv,row.names=FALSE)
     cat("CSV score saved to:", output_bipolar_file_path_csv, "\n")
