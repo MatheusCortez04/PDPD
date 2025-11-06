@@ -67,6 +67,8 @@ generate_commute_time_kernel = function(graph,normalized=TRUE,save_rdata=TRUE){
     cat("Calculating commute time kernel for the graph...\n")
     commute_time_kernel = commuteTimeKernel(graph,normalized)
     cat("Commute time kernel calculated successfully!\n\n")
+    min_value = min(commute_time_kernel)
+    commute_time_kernel = commute_time_kernel - min_value
     write.csv(commute_time_kernel, file =path_csv)
     cat("Csv file  saved to:", path_csv, "\n")
     Sys.sleep(1.5)
