@@ -71,85 +71,136 @@ drug_function_mapper <- list(
 )
 
 calculate_kernel_score = function(){
-drug_gene__matrix_file_path="drug_gene"
-kernel_file_names = c('diffusion_kernel','pstep_kernel','regularised_laplacian_kernel','commute_time_kernel','inverse_cosine_kernel')
-drug_protein_file_path = here("src","Data","Drug","RData",paste0(drug_gene__matrix_file_path, ".Rdata"))
+    drug_gene__matrix_file_path="drug_gene"
+    kernel_file_names = c('diffusion_kernel','pstep_kernel','regularised_laplacian_kernel','commute_time_kernel','inverse_cosine_kernel')
+    drug_protein_file_path = here("src","Data","Drug","RData",paste0(drug_gene__matrix_file_path, ".Rdata"))
 
-drug_protein_file_already_exists = file.exists(drug_protein_file_path)
-if(!drug_protein_file_already_exists){
-    cat("\n[Error]: Required file Drug gene matrix not found. This file is necessary to calculate the score. Would you like to create it now\n")
-     Sys.sleep(1.5)
-    return()
-}
+    drug_protein_file_already_exists = file.exists(drug_protein_file_path)
+    if(!drug_protein_file_already_exists){
+        cat("\n[Error]: Required file Drug gene matrix not found. This file is necessary to calculate the score. Would you like to create it now\n")
+        Sys.sleep(1.5)
+        return()
+    }
 
 drug_protein_matrix = load_rdata(drug_protein_file_path)
-mdd_vector = build_protein_mdd_df()
-bipolar_vector = mdd_vector = build_protein_bipolar_df()
-for (kernel_name in kernel_file_names){
-    cat("\n--- Generating Score Kernel ---\n")
+    mdd_vector = build_protein_mdd_df()
+    bipolar_vector = mdd_vector = build_protein_bipolar_df()
 
-    kernel_path_rdata = here("src","Data","Kernels","RData", paste0(kernel_name, ".Rdata"))
-    kernel_file_exists = file.exists(kernel_path_rdata)
-    if(!kernel_file_exists){
-        cat("Kernel file",kernel_name,"no exists\n")
-        Sys.sleep(1)
-        next()
-    }
+    for (kernel_name in kernel_file_names){
+        cat("\n--- Generating Score Kernel ---\n")
 
-    kernel = load_rdata(kernel_path_rdata)
+        kernel_path_rdata = here("src","Data","Kernels","RData", paste0(kernel_name, ".Rdata"))
+        kernel_file_exists = file.exists(kernel_path_rdata)
+        if(!kernel_file_exists){
+            cat("Kernel file",kernel_name,"no exists\n")
+            Sys.sleep(1)
+            next()
+        }
 
-    cat("Starting mdd matrix multiplication...\n")
-    mdd_score = drug_protein_matrix %*% kernel %*% mdd_vector$is_disease 
-    mdd_score_df = data.frame(
-        Drug_Id =  rownames(drug_protein_matrix),
-        Kernel_Score = as.numeric(mdd_score)
+        kernel = load_rdata(kernel_path_rdata)
 
-    )
-    cat("Matrix multiplication completed!\n")
+        cat("Starting mdd matrix multiplication...\n")
+        mdd_score = drug_protein_matrix %*% kernel %*% mdd_vector$is_disease 
+        mdd_score_df = data.frame(
+            Drug_Id =  rownames(drug_protein_matrix),
+            Kernel_Score = as.numeric(mdd_score)
 
-
-    kernel_score_dir = "src/Data/Kernels/Score/"
-    kernel_score_rdata_dir = "src/Data/Kernels/RData/Score"
-
-    output_mdd_file_path_Rdata = here(kernel_score_rdata_dir, paste0(kernel_name, "_mdd_score.Rdata"))
-    output_mdd_file_path_csv = here(kernel_score_dir, paste0(kernel_name, "_mdd_score.csv"))
-
-    kernel_score_dir_already_exists = dir.exists(kernel_score_dir)
-    kernel_score_rdata_dir_already_exists = dir.exists(kernel_score_rdata_dir)
-
-    if(!kernel_score_dir_already_exists){
-        dir.create(kernel_score_dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
-    }
-        if(!kernel_score_rdata_dir_already_exists){
-        dir.create(kernel_score_rdata_dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
-    }
-
-    write.csv(mdd_score_df, file = output_mdd_file_path_csv,row.names=FALSE)
-    cat("CSV score saved to:", output_mdd_file_path_csv, "\n")
-    save(mdd_score_df, file = output_mdd_file_path_Rdata)
-    cat("R object score saved to:", output_mdd_file_path_Rdata, "\n")
+        )
+        mdd_score_df = mdd_score_df %>% arrange(desc(Kernel_Score))
+        cat("Matrix multiplication completed!\n")
 
 
-    cat("Starting bipolar matrix multiplication...\n")
-    bipolar_score = drug_protein_matrix %*% kernel %*% bipolar_vector$is_disease 
-    bipolar_score_df = data.frame(
-        Drug_Id =  rownames(drug_protein_matrix),
-        Kernel_Score = as.numeric(bipolar_score)
+        kernel_score_dir = "src/Data/Kernels/Score/"
+        kernel_score_rdata_dir = "src/Data/Kernels/RData/Score"
 
-    )
-    cat("Matrix multiplication completed!\n")
-    output_bipolar_file_path_Rdata = here(kernel_score_rdata_dir, paste0(kernel_name, "_bipolar_score.Rdata"))
-    output_bipolar_file_path_csv = here(kernel_score_dir, paste0(kernel_name, "_bipolar_score.csv"))
-    
-    write.csv(bipolar_score_df, file = output_bipolar_file_path_csv,row.names=FALSE)
-    cat("CSV score saved to:", output_bipolar_file_path_csv, "\n")
-    save(bipolar_score_df, file = output_bipolar_file_path_Rdata)
-    cat("R object score saved to:", output_bipolar_file_path_Rdata, "\n")
-    
-    }
+        output_mdd_file_path_Rdata = here(kernel_score_rdata_dir, paste0(kernel_name, "_mdd_score.Rdata"))
+        output_mdd_file_path_csv = here(kernel_score_dir, paste0(kernel_name, "_mdd_score.csv"))
 
+        kernel_score_dir_already_exists = dir.exists(kernel_score_dir)
+        kernel_score_rdata_dir_already_exists = dir.exists(kernel_score_rdata_dir)
+
+        if(!kernel_score_dir_already_exists){
+            dir.create(kernel_score_dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
+        }
+            if(!kernel_score_rdata_dir_already_exists){
+            dir.create(kernel_score_rdata_dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
+        }
+
+        write.csv(mdd_score_df, file = output_mdd_file_path_csv,row.names=FALSE)
+        cat("CSV score saved to:", output_mdd_file_path_csv, "\n")
+        save(mdd_score_df, file = output_mdd_file_path_Rdata)
+        cat("R object score saved to:", output_mdd_file_path_Rdata, "\n")
+
+
+        cat("Starting bipolar matrix multiplication...\n")
+        bipolar_score = drug_protein_matrix %*% kernel %*% bipolar_vector$is_disease 
+        bipolar_score_df = data.frame(
+            Drug_Id =  rownames(drug_protein_matrix),
+            Kernel_Score = as.numeric(bipolar_score)
+
+        )
+        bipolar_score_df = bipolar_score_df %>% arrange(desc(Kernel_Score))
+        cat("Matrix multiplication completed!\n")
+        output_bipolar_file_path_Rdata = here(kernel_score_rdata_dir, paste0(kernel_name, "_bipolar_score.Rdata"))
+        output_bipolar_file_path_csv = here(kernel_score_dir, paste0(kernel_name, "_bipolar_score.csv"))
+
+        write.csv(bipolar_score_df, file = output_bipolar_file_path_csv,row.names=FALSE)
+        cat("CSV score saved to:", output_bipolar_file_path_csv, "\n")
+        save(bipolar_score_df, file = output_bipolar_file_path_Rdata)
+        cat("R object score saved to:", output_bipolar_file_path_Rdata, "\n")
+
+        }
+    generate_drug_kernel_bipolar_score()
+    generate_drug_kernel_mdd_score()
 
 } 
+
+
+generate_drug_kernel_bipolar_score = function(){
+    difussion_kernel_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("diffusion_kernel_bipolar_score.Rdata")))
+    pstep_kernel_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("pstep_kernel_bipolar_score.Rdata")))
+    regularised_laplacian_kernel_bipolar_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("regularised_laplacian_kernel_bipolar_score.Rdata")))
+    inverse_cosine_kernel_bipolar_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("inverse_cosine_kernel_bipolar_score.Rdata")))
+    commute_time_kernel_bipolar_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("commute_time_kernel_bipolar_score.Rdata")))
+    merge_df = difussion_kernel_score %>%
+        left_join(pstep_kernel_score,by = "Drug_Id") %>%
+        left_join(regularised_laplacian_kernel_bipolar_score,by = "Drug_Id") %>%
+        left_join(inverse_cosine_kernel_bipolar_score,by="Drug_Id") %>%
+        left_join(commute_time_kernel_bipolar_score,by="Drug_Id") %>%
+        rename(difussion_kernel_score=Kernel_Score.x,
+                pstep_kernel_score=Kernel_Score.y,
+                regularised_laplacian_kernel_score = Kernel_Score.x.x,
+                inverse_cosine_kernel_score = Kernel_Score.y.y,
+                commute_time_kernel_score=Kernel_Score
+                )
+
+    output_bipolar_Score_file_path_csv = here("src","Data","bipolar_kernel_score.csv")
+    write.csv(merge_df,file=output_bipolar_Score_file_path_csv,row.names=FALSE)
+    cat("CSV score saved to:", output_bipolar_Score_file_path_csv, "\n")
+}
+
+generate_drug_kernel_mdd_score = function(){
+    difussion_kernel_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("diffusion_kernel_mdd_score.Rdata")))
+    pstep_kernel_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("pstep_kernel_mdd_score.Rdata")))
+    regularised_laplacian_kernel_bipolar_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("regularised_laplacian_kernel_mdd_score.Rdata")))
+    inverse_cosine_kernel_bipolar_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("inverse_cosine_kernel_bipolar_score.Rdata")))
+    commute_time_kernel_bipolar_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("commute_time_kernel_mdd_score.Rdata")))
+    merge_df = difussion_kernel_score %>%
+        left_join(pstep_kernel_score,by = "Drug_Id") %>%
+        left_join(regularised_laplacian_kernel_bipolar_score,by = "Drug_Id") %>%
+        left_join(inverse_cosine_kernel_bipolar_score,by="Drug_Id") %>%
+        left_join(commute_time_kernel_bipolar_score,by="Drug_Id") %>%
+        rename(difussion_kernel_score=Kernel_Score.x,
+                pstep_kernel_score=Kernel_Score.y,
+                regularised_laplacian_kernel_score = Kernel_Score.x.x,
+                inverse_cosine_kernel_score = Kernel_Score.y.y,
+                commute_time_kernel_score=Kernel_Score
+                )
+
+    output_mdd_score_file_path_csv = here("src","Data","mdd_kernel_score.csv")
+    write.csv(merge_df,file=output_mdd_score_file_path_csv,row.names=FALSE)
+    cat("CSV score saved to:", output_mdd_score_file_path_csv, "\n")
+}
 
  
 
