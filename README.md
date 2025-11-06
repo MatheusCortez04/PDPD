@@ -111,8 +111,6 @@ O arquivo `.Rprofile` é um script que é automaticamente executado toda vez que
 
   - **Inicialização da aplicação:**  
   Após preparar o ambiente, chama a função `main()` (definida em `src/PDPD.R`), que dispara a execução da análise, iniciando o menu e fluxos interativos.
----
-Essa abordagem garante que todo o ambiente necessário esteja configurado e a aplicação em R possa rodar de forma consistente e sem erros relacionados a diretórios ou carregamento de scripts.
 
 
 ### Referências:
@@ -122,6 +120,7 @@ Essa abordagem garante que todo o ambiente necessário esteja configurado e a ap
 - [RStudio Documentation: Managing R Sessions and Profiles](https://docs.posit.co/ide/user/ide/guide/environments/r/managing-r.html#rprofile)  
 
 - [Personalizando a inicialização no R](https://kevinushey.github.io/blog/2015/02/02/rprofile-essentials/](https://www.datacamp.com/pt/doc/r/customizing))
+
 
 
 ---
@@ -145,7 +144,7 @@ Este é o script principal e o ponto de entrada (entrypoint) de toda a aplicaç�
 * **Delegação de Tarefas:** Atua como um "roteador". Ele não realiza os cálculos em si, mas sim delega as tarefas para as funções de submenu (`generate_kernel_menu()` e `scoring_drug_disease_menu()`), que foram carregadas a partir dos scripts em `src/Utils/`.
 * **Saída Limpa:** Ao receber a opção 'Q' (e normalizá-la com `toupper()` e `trimws()`), o script sai do loop e chama `q(save="no")`, encerrando a sessão R de forma limpa, sem salvar o *workspace*.
 
-Essa abordagem centraliza o fluxo da aplicação em um único script, que atua como um orquestrador, chamando os módulos especializados (em `src/Utils/`) para executar o trabalho pesado.
+####  Essa abordagem centraliza o fluxo da aplicação em um único script, que atua como um orquestrador, chamando os módulos especializados (em `src/Utils/`) para executar o trabalho pesado.
 ---
 ### `src/Utils/kernels.R` 
 ### generate_kernel_menu e Funções de Geração de Kernels
