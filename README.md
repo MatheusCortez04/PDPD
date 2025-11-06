@@ -1,6 +1,5 @@
 # Análise de Reposicionamento de Fármacos para Transtornos Psiquiátricos
 
-[![Badge de Licença](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 Este projeto utiliza redes de interação proteína-proteína (PPI) e a proximidade de alvos de medicamentos na rede para identificar potenciais novos usos para medicamentos existentes, focando especificamente no Transtorno Depressivo Maior (TDM) e no Transtorno Bipolar (TB).
 
