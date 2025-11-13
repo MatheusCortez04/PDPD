@@ -84,7 +84,7 @@ calculate_kernel_score = function(){
 
 drug_protein_matrix = load_rdata(drug_protein_file_path)
     mdd_vector = build_protein_mdd_df()
-    bipolar_vector = mdd_vector = build_protein_bipolar_df()
+    bipolar_vector =build_protein_bipolar_df()
 
     for (kernel_name in kernel_file_names){
         cat("\n--- Generating Score Kernel ---\n")
