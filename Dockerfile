@@ -1,5 +1,5 @@
 
-FROM rocker/tidyverse:latest
+FROM rocker/tidyverse:4.5.2
 
 
 USER root
