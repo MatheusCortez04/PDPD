@@ -2,97 +2,119 @@ library(diffuStats)
 library(igraph)
 source(here("src","Utils","utils.R"))
 generate_difussion_kernel= function(graph,normalized=TRUE,save_rdata=TRUE){
-    output_path="diffusion_kernel"
-    path_csv = here("src","Data","Kernels",paste0(output_path, ".csv"))
-    path_rdata = here("src","Data","Kernels","RData",paste0(output_path, ".Rdata"))
+    output_file_name="diffusion_kernel"
+    output_dir=here("src","Data","Kernels")
+    create_dir(output_dir)
+    output_path_csv =here(output_dir,paste0(output_file_name, ".csv"))
+    
     
     cat("Calculating diffusion kernel for the graph...\n")
-    diffusion_kernel = diffusionKernel(graph,normalized,)
+    diffusion_kernel = diffusionKernel(graph,normalized)
 
     cat("Diffusion kernel calculated successfully!\n\n")
-    write.csv(diffusion_kernel, file =path_csv)
-    cat("Csv file  saved to:", path_csv, "\n")
+    write.csv(diffusion_kernel, file =output_path_csv)
+    cat("Csv file  saved to:", output_path_csv, "\n")
     Sys.sleep(1.5)
+
     if(save_rdata){
-        save(diffusion_kernel, file = path_rdata)
-        cat("R object 'diffusion_kernel' saved to:", path_rdata, "\n")
+        rdata_dir=here("src","Data","Kernels","RData")
+        create_dir(rdata_dir)
+        output_path_rdata = here(rdata_dir,paste0(output_path, ".Rdata"))
+        save(diffusion_kernel, file = output_path_rdata)
+        cat("R object 'diffusion_kernel' saved to:", output_path_rdata, "\n")
         Sys.sleep(1.5)
     }
    invisible(diffusion_kernel)
 }
 generate_pstep_kernel = function(graph,step=5,save_rdata=TRUE){
-    output_path="pstep_kernel"
-    path_csv = here("src","Data","Kernels",paste0(output_path, ".csv"))
-    path_rdata = here("src","Data","Kernels","RData",paste0(output_path, ".Rdata"))
-    
+    output_file_name="pstep_kernel"    
+    output_dir=here("src","Data","Kernels")
+    create_dir(output_dir)
+    output_path_csv =here(output_dir,paste0(output_file_name, ".csv"))
     cat("Calculating p-step (random walk) kernel for the graph...\n")
 
     pstep_kernel = pStepKernel(graph,p=step)
     cat("p-step kernel calculated successfully!\n\n")
-    write.csv(pstep_kernel, file =path_csv)
-    cat("Csv file  saved to:", path_csv, "\n")
+    write.csv(pstep_kernel, file =output_path_csv)
+    cat("Csv file  saved to:", output_path_csv, "\n")
     Sys.sleep(1.5)
     if(save_rdata){
-        save(pstep_kernel, file = path_rdata)
-        cat("R object 'pstep_kernel' saved to:", path_rdata, "\n")
+        rdata_dir=here("src","Data","Kernels","RData")
+        create_dir(rdata_dir)
+        output_path_rdata = here(rdata_dir,paste0(output_file_name, ".Rdata"))
+        save(pstep_kernel, file = output_path_rdata)
+        cat("R object 'pstep_kernel' saved to:", output_path_rdata, "\n")
         Sys.sleep(1.5)
     }
     invisible(pstep_kernel)
 
 }
 generate_regularised_laplacian_kernel = function(graph,normalized=TRUE,save_rdata=TRUE){
-    output_path="regularised_laplacian_kernel"
-    path_csv = here("src","Data","Kernels",paste0(output_path, ".csv"))
-    path_rdata = here("src","Data","Kernels","RData",paste0(output_path, ".Rdata"))
+    output_file_name="regularised_laplacian_kernel"
+    output_dir=here("src","Data","Kernels")
+    create_dir(output_dir)
+    output_path_csv =here(output_dir,paste0(output_file_name, ".csv"))
 
     cat("Calculating regularised laplacian kernel for the graph...\n")
     regularised_laplacian_kernel = regularisedLaplacianKernel(graph,normalized)
     cat("Regularised laplacian kernel calculated successfully!\n\n")
     
-    write.csv(regularised_laplacian_kernel, file =path_csv)
-    cat("Csv file  saved to:", path_csv, "\n")
+    write.csv(regularised_laplacian_kernel, file =output_path_csv)
+    cat("Csv file  saved to:", output_path_csv, "\n")
     Sys.sleep(1.5)
     if(save_rdata){
-        save(regularised_laplacian_kernel, file = path_rdata)
-        cat("R object 'regularised_laplacian_kernel' saved to:", path_rdata, "\n")
+        rdata_dir=here("src","Data","Kernels","RData")
+        create_dir(rdata_dir)
+        output_path_rdata = here(rdata_dir,paste0(output_file_name, ".Rdata"))
+        save(regularised_laplacian_kernel, file = output_path_rdata)
+        cat("R object 'regularised_laplacian_kernel' saved to:", output_path_rdata, "\n")
         Sys.sleep(1.5)
     }
      invisible(regularised_laplacian_kernel)
 }
 generate_commute_time_kernel = function(graph,normalized=TRUE,save_rdata=TRUE){
-    output_path="commute_time_kernel"
-    path_csv = here("src","Data","Kernels",paste0(output_path, ".csv"))
-    path_rdata = here("src","Data","Kernels","RData",paste0(output_path, ".Rdata"))
+    output_file_name="commute_time_kernel"
+    output_dir=here("src","Data","Kernels")
+    create_dir(output_dir)
+    output_path_csv =here(output_dir,paste0(output_file_name, ".csv"))
 
     cat("Calculating commute time kernel for the graph...\n")
     commute_time_kernel = commuteTimeKernel(graph,normalized)
     cat("Commute time kernel calculated successfully!\n\n")
     min_value = min(commute_time_kernel)
     commute_time_kernel = commute_time_kernel - min_value
-    write.csv(commute_time_kernel, file =path_csv)
-    cat("Csv file  saved to:", path_csv, "\n")
+    write.csv(commute_time_kernel, file =output_path_csv)
+    cat("Csv file  saved to:", output_path_csv, "\n")
     Sys.sleep(1.5)
+
     if(save_rdata){
-        save(commute_time_kernel, file = path_rdata)
-        cat("R object 'commute_time_kernel' saved to:", path_rdata, "\n")
+        rdata_dir=here("src","Data","Kernels","RData")
+        create_dir(rdata_dir)
+        output_path_rdata = here(rdata_dir,paste0(output_file_name, ".Rdata"))
+        save(commute_time_kernel, file = output_path_rdata)
+        cat("R object 'commute_time_kernel' saved to:", output_path_rdata, "\n")
         Sys.sleep(1.5)
     }
      invisible(commute_time_kernel)
 }
 generate_inverse_cosine_kernel = function(graph,save_rdata=TRUE){
-    output_path="inverse_cosine_kernel"
-    path_csv = here("src","Data","Kernels",paste0(output_path, ".csv"))
-    path_rdata = here("src","Data","Kernels","RData",paste0(output_path, ".Rdata"))
+    output_file_name="inverse_cosine_kernel"
+    output_dir=here("src","Data","Kernels")
+    create_dir(output_dir)
+    output_path_csv =here(output_dir,paste0(output_file_name, ".csv"))
 
-     cat("Calculating inverse cosine kernel for the graph...\n")
+    cat("Calculating inverse cosine kernel for the graph...\n")
     inverse_cosine_kernel = inverseCosineKernel(graph)
     write.csv(inverse_cosine_kernel, file =path_csv)
     cat("Inverse cosine kernel calculated successfully!\n\n")
     cat("Csv file  saved to:", path_csv, "\n")
     Sys.sleep(1.5)
     if(save_rdata){
-        save(inverse_cosine_kernel, file = path_rdata)
-        cat("R object 'inverse_cosine_kernel' saved to:", path_rdata, "\n")
+        rdata_dir=here("src","Data","Kernels","RData")
+        create_dir(rdata_dir)
+        output_path_rdata = here(rdata_dir,paste0(output_file_name, ".Rdata"))
+        save(inverse_cosine_kernel, file = output_path_rdata)
+        cat("R object 'inverse_cosine_kernel' saved to:", output_path_rdata, "\n")
         Sys.sleep(1.5)
     }
      invisible(inverse_cosine_kernel)
