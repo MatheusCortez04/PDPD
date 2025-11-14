@@ -73,24 +73,23 @@ drug_function_mapper <- list(
         generate_ordered_drug_protein_matrix(drug_target_df,protein_nodes,drug_nodes)
     },
     '2' = function(){
-        
         calculate_kernel_score()
     }
 )
 
 calculate_kernel_score = function(){
-    drug_gene__matrix_file_path="drug_gene"
+    drug_gene__matrix_file_path="drug_target_matrix"
     kernel_file_names = c('diffusion_kernel','pstep_kernel','regularised_laplacian_kernel','commute_time_kernel','inverse_cosine_kernel')
-    drug_protein_file_path = here("src","Data","Drug","RData",paste0(drug_gene__matrix_file_path, ".Rdata"))
+    drug_target_rdata_file_path = here("src","Data","Drug","RData",paste0(drug_gene__matrix_file_path, ".Rdata"))
 
-    drug_protein_file_already_exists = file.exists(drug_protein_file_path)
+    drug_protein_file_already_exists = file.exists(drug_target_rdata_file_path)
     if(!drug_protein_file_already_exists){
-        cat("\n[Error]: Required file Drug gene matrix not found. This file is necessary to calculate the score. Would you like to create it now\n")
+        cat("\n[Error]: Required file Drug target matrix not found.\n This file is necessary to calculate the score. Would you like to create it now\n")
         Sys.sleep(1.5)
         return()
     }
 
-drug_protein_matrix = load_rdata(drug_protein_file_path)
+    drug_protein_matrix = load_rdata(drug_target_rdata_file_path)
     mdd_vector = build_protein_mdd_df()
     bipolar_vector =build_protein_bipolar_df()
 
@@ -118,21 +117,16 @@ drug_protein_matrix = load_rdata(drug_protein_file_path)
         cat("Matrix multiplication completed!\n")
 
 
-        kernel_score_dir = "src/Data/Kernels/Score/"
-        kernel_score_rdata_dir = "src/Data/Kernels/RData/Score"
+        kernel_score_dir = here("src","Data","Kernels","Score")
+        mdd_score_dir =here(kernel_score_dir,"MDD")
+        create_dir(mdd_score_dir)
 
-        output_mdd_file_path_Rdata = here(kernel_score_rdata_dir, paste0(kernel_name, "_mdd_score.Rdata"))
-        output_mdd_file_path_csv = here(kernel_score_dir, paste0(kernel_name, "_mdd_score.csv"))
+        mdd_score_rdata_dir = here(mdd_score_dir,"RData")
+        create_dir(mdd_score_rdata_dir)
 
-        kernel_score_dir_already_exists = dir.exists(kernel_score_dir)
-        kernel_score_rdata_dir_already_exists = dir.exists(kernel_score_rdata_dir)
-
-        if(!kernel_score_dir_already_exists){
-            dir.create(kernel_score_dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
-        }
-            if(!kernel_score_rdata_dir_already_exists){
-            dir.create(kernel_score_rdata_dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
-        }
+        
+        output_mdd_file_path_csv = here(mdd_score_dir, paste0(kernel_name, ".csv"))
+        output_mdd_file_path_Rdata = here(mdd_score_rdata_dir,paste0(kernel_name, ".Rdata"))
 
         write.csv(mdd_score_df, file = output_mdd_file_path_csv,row.names=FALSE)
         cat("CSV score saved to:", output_mdd_file_path_csv, "\n")
@@ -149,8 +143,14 @@ drug_protein_matrix = load_rdata(drug_protein_file_path)
         )
         bipolar_score_df = bipolar_score_df %>% arrange(desc(Kernel_Score))
         cat("Matrix multiplication completed!\n")
-        output_bipolar_file_path_Rdata = here(kernel_score_rdata_dir, paste0(kernel_name, "_bipolar_score.Rdata"))
-        output_bipolar_file_path_csv = here(kernel_score_dir, paste0(kernel_name, "_bipolar_score.csv"))
+        bipolar_score_dir = here(kernel_score_dir,"BD")
+        create_dir(bipolar_score_dir)
+        
+        bipolar_score_rdata_dir = here(bipolar_score_dir,"RData")
+        create_dir(bipolar_score_rdata_dir)
+
+        output_bipolar_file_path_csv = here(bipolar_score_dir, paste0(kernel_name, ".csv"))
+        output_bipolar_file_path_Rdata =here(bipolar_score_rdata_dir,paste0(kernel_name, ".Rdata")) 
 
         write.csv(bipolar_score_df, file = output_bipolar_file_path_csv,row.names=FALSE)
         cat("CSV score saved to:", output_bipolar_file_path_csv, "\n")
@@ -158,9 +158,6 @@ drug_protein_matrix = load_rdata(drug_protein_file_path)
         cat("R object score saved to:", output_bipolar_file_path_Rdata, "\n")
 
         }
-    generate_drug_kernel_bipolar_score()
-    generate_drug_kernel_mdd_score()
-
 } 
 
 
