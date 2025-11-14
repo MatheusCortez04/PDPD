@@ -1,6 +1,5 @@
 library(here)
 source(here("src","Utils","utils.R"))
-
 generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,drug_nodes){
   cat("\n--- Generating Drug Target Matrix ---\n")
     output_file_name="drug_target_matrix"
@@ -42,8 +41,6 @@ generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,dru
     Sys.sleep(1)
 }
 
-
-
 scoring_drug_disease_menu = function(){
   while(TRUE){
     clear_console()
@@ -59,7 +56,7 @@ scoring_drug_disease_menu = function(){
   }
 }
 
-drug_function_mapper <- list(
+drug_function_mapper = list(
     '1' = function() {
         cat("\n--- Generating and  Drug  Target Matrix  ---\n")
         drug_target_df  = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv"), sep=",")
@@ -156,57 +153,56 @@ calculate_kernel_score = function(){
         cat("CSV score saved to:", output_bipolar_file_path_csv, "\n")
         save(bipolar_score_df, file = output_bipolar_file_path_Rdata)
         cat("R object score saved to:", output_bipolar_file_path_Rdata, "\n")
-
         }
+        generate_kernel_rank("MDD")
+        generate_kernel_rank("BD")
 } 
 
+generate_kernel_rank = function(disease = c("MDD", "BD")) {
+    disease = match.arg(disease)
 
-generate_drug_kernel_bipolar_score = function(){
-    difussion_kernel_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("diffusion_kernel_bipolar_score.Rdata")))
-    pstep_kernel_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("pstep_kernel_bipolar_score.Rdata")))
-    regularised_laplacian_kernel_bipolar_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("regularised_laplacian_kernel_bipolar_score.Rdata")))
-    inverse_cosine_kernel_bipolar_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("inverse_cosine_kernel_bipolar_score.Rdata")))
-    commute_time_kernel_bipolar_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("commute_time_kernel_bipolar_score.Rdata")))
-    merge_df = difussion_kernel_score %>%
-        left_join(pstep_kernel_score,by = "Drug_Id") %>%
-        left_join(regularised_laplacian_kernel_bipolar_score,by = "Drug_Id") %>%
-        left_join(inverse_cosine_kernel_bipolar_score,by="Drug_Id") %>%
-        left_join(commute_time_kernel_bipolar_score,by="Drug_Id") %>%
-        rename(difussion_kernel_score=Kernel_Score.x,
-                pstep_kernel_score=Kernel_Score.y,
-                regularised_laplacian_kernel_score = Kernel_Score.x.x,
-                inverse_cosine_kernel_score = Kernel_Score.y.y,
-                commute_time_kernel_score=Kernel_Score
-                )
+    cat("[WARN] Building Average Rank to Disease:", disease, "\n")
 
-    output_bipolar_Score_file_path_csv = here("src","Data","bipolar_kernel_score.csv")
-    write.csv(merge_df,file=output_bipolar_Score_file_path_csv,row.names=FALSE)
-    cat("CSV score saved to:", output_bipolar_Score_file_path_csv, "\n")
+    kernel_names = c(
+        "diffusion_kernel","pstep_kernel","regularised_laplacian_kernel",
+        "commute_time_kernel","inverse_cosine_kernel"
+    )
+
+    score_base_dir = here("src", "Data", "Kernels", "Score", disease)
+    score_list = list()
+
+    for (kernel in kernel_names) {
+        rdata_path = here(score_base_dir, "RData", paste0(kernel, ".Rdata"))
+
+        if (!file.exists(rdata_path)) {
+            cat("[WARN] Score RData not  found:", rdata_path, "\n")
+            next()
+        }
+
+        df = load_rdata(rdata_path)
+        df[[kernel]] = rank(-df$Kernel_Score, ties.method = "average")
+
+        score_list[[kernel]] = df[, c("Drug_Id", kernel)]
+
+    }
+
+    if (length(score_list) == 0) {
+        stop("No RData files were found to generate the final ranking")
+    }
+     final_rank_df = Reduce(function(x, y) merge(x, y, by="Drug_Id", all=TRUE),
+                            score_list)
+
+        final_rank_df$Mean_Rank = rowMeans(final_rank_df[, kernel_names], na.rm = TRUE)
+
+    final_rank_df$Mean_Rank = rowMeans(final_rank_df[, -1], na.rm = TRUE)
+    final_rank_df = final_rank_df[order(final_rank_df$Mean_Rank), ]
+    output_csv = here(score_base_dir, "average_kernel_rank.csv")
+    write.csv(final_rank_df, file = output_csv, row.names = FALSE)
+
+    cat("\n✔ Average Kernel Rank save in: ", output_csv, "\n")
+
+    return(final_rank_df)
 }
 
-generate_drug_kernel_mdd_score = function(){
-    difussion_kernel_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("diffusion_kernel_mdd_score.Rdata")))
-    pstep_kernel_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("pstep_kernel_mdd_score.Rdata")))
-    regularised_laplacian_kernel_bipolar_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("regularised_laplacian_kernel_mdd_score.Rdata")))
-    inverse_cosine_kernel_bipolar_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("inverse_cosine_kernel_bipolar_score.Rdata")))
-    commute_time_kernel_bipolar_score = load_rdata(here("src","Data","Kernels","RData","Score", paste0("commute_time_kernel_mdd_score.Rdata")))
-    merge_df = difussion_kernel_score %>%
-        left_join(pstep_kernel_score,by = "Drug_Id") %>%
-        left_join(regularised_laplacian_kernel_bipolar_score,by = "Drug_Id") %>%
-        left_join(inverse_cosine_kernel_bipolar_score,by="Drug_Id") %>%
-        left_join(commute_time_kernel_bipolar_score,by="Drug_Id") %>%
-        rename(difussion_kernel_score=Kernel_Score.x,
-                pstep_kernel_score=Kernel_Score.y,
-                regularised_laplacian_kernel_score = Kernel_Score.x.x,
-                inverse_cosine_kernel_score = Kernel_Score.y.y,
-                commute_time_kernel_score=Kernel_Score
-                )
-
-    output_mdd_score_file_path_csv = here("src","Data","mdd_kernel_score.csv")
-    write.csv(merge_df,file=output_mdd_score_file_path_csv,row.names=FALSE)
-    cat("CSV score saved to:", output_mdd_score_file_path_csv, "\n")
-}
-
- 
 
 
