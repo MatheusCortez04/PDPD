@@ -2,10 +2,16 @@ library(here)
 source(here("src","Utils","utils.R"))
 
 generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,drug_nodes){
-  cat("\n--- Generating Drug Protein Matrix ---\n")
-    output_path="drug_gene"
-    path_csv = here("src","Data","Drug",paste0(output_path, ".csv"))
-    path_rdata = here("src","Data","Drug","RData",paste0(output_path, ".Rdata"))
+  cat("\n--- Generating Drug Target Matrix ---\n")
+    output_file_name="drug_target_matrix"
+    drug_dir =here("src","Data","Drug")
+    drug_Rdata_dir =here("src","Data","Drug","RData")
+    create_dir(drug_dir)
+    create_dir(drug_Rdata_dir)
+    
+    output_path_csv = here(drug_dir,paste0(output_file_name, ".csv"))
+    output_path_rdata = here(drug_Rdata_dir,paste0(output_file_name, ".Rdata"))
+
 
     matrix_drug_protein = drug_target_df %>% 
     filter( entrez_id %in% protein_nodes) %>%
@@ -24,15 +30,15 @@ generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,dru
         id_expand = TRUE
     ) %>% arrange(drugbank_id)
 
-    write.csv(matrix_drug_protein, file =path_csv,row.names=FALSE)
-    cat("Csv file  saved to:", path_csv, "\n")
+    write.csv(matrix_drug_protein, file =output_path_csv,row.names=FALSE)
+    cat("Csv file  saved to:", output_path_csv, "\n")
     Sys.sleep(1)
     matrix_drug_protein_numeric <- as.matrix(matrix_drug_protein[ , -1])
     rownames(matrix_drug_protein_numeric) <- matrix_drug_protein$drugbank_id
     storage.mode(matrix_drug_protein_numeric) <- "numeric"
 
-    save(matrix_drug_protein_numeric, file = path_rdata)
-    cat("R object 'drug_target_df' saved to:", path_rdata, "\n")
+    save(matrix_drug_protein_numeric, file = output_path_rdata)
+    cat("R object 'drug_target_df' saved to:", output_path_rdata, "\n")
     Sys.sleep(1)
 }
 
@@ -55,11 +61,13 @@ scoring_drug_disease_menu = function(){
 
 drug_function_mapper <- list(
     '1' = function() {
-        cat("\n--- Generating and  Drug X Protein Matrix  ---\n")
-        drug_target_df  = read.csv(here("src","Data","drug_targets_DrugBank_Gysi.csv"), sep=",")
+        cat("\n--- Generating and  Drug  Target Matrix  ---\n")
+        drug_target_df  = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv"), sep=",")
+
         cat("Drug Target file reading complete.\n")
         ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
         cat("PPI  file reading complete.\n")
+
         protein_nodes = get_ppi_nodes(ppi_df)
         drug_nodes= get_drug_nodes(drug_target_df)
         generate_ordered_drug_protein_matrix(drug_target_df,protein_nodes,drug_nodes)
