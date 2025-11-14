@@ -36,7 +36,7 @@ load_rdata <- function(path_file) {
 get_mdd_genes = function(){
   major_depressive_disorder_id = "C1269683"
   score_filter = 0.6
-  disease_gene_df  = read.csv(here("src","Data","disease_genes.csv"), sep="\t")
+  disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"), sep="\t")
   disease_gene_df =disease_gene_df %>%
     filter(diseaseid ==major_depressive_disorder_id &
      score>=score_filter) %>%
@@ -48,7 +48,7 @@ get_mdd_genes = function(){
 get_bipolar_disorder_genes = function(){
   bipolar_disorder_id = "C0005586"
   score_filter = 0.6
-  disease_gene_df  = read.csv(here("src","Data","disease_genes.csv"), sep="\t")
+  disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"), sep="\t")
   disease_gene_df =disease_gene_df %>%
     filter(diseaseid ==bipolar_disorder_id &
      score>=score_filter) %>%
@@ -67,9 +67,14 @@ build_protein_mdd_df= function(){
   mdd_vector <- mdd_vector %>% mutate(
    is_disease = ifelse(gene_id %in% mdd_genes$gene_id, 1, 0))
 
+
   output_file_name ="mdd_genes_vector"
-  output_file_path_csv = here("src","Data",paste0(output_file_name,".csv"))
-  output_file_path_rdata = here("src","Data",paste0(output_file_name,".Rdata"))
+  output_path= here("src","Data","Disease")
+  output_file_path_csv = here(output_path,paste0(output_file_name,".csv"))
+
+  output_path_rdata =here(output_path,"Rdata")
+  create_dir(output_path_rdata)
+  output_file_path_rdata = here(output_path_rdata,paste0(output_file_name,".Rdata"))
   
   write.csv(mdd_vector,file=output_file_path_csv,row.names=FALSE )
   save(mdd_vector, file = output_file_path_rdata)
@@ -86,8 +91,13 @@ build_protein_bipolar_df= function(){
   bipolar_vector <- bipolar_vector %>% mutate(
    is_disease = ifelse(gene_id %in% bipolar_genes$gene_id, 1, 0))
   output_file_name ="bipolar_genes_vector"
-  output_file_path_csv = here("src","Data",paste0(output_file_name,".csv"))
-  output_file_path_rdata = here("src","Data",paste0(output_file_name,".Rdata"))
+  output_path= here("src","Data","Disease")
+  output_file_path_csv = here(output_path,paste0(output_file_name,".csv"))
+
+  output_path_rdata =here(output_path,"Rdata")
+  create_dir(output_path_rdata)
+
+  output_file_path_rdata = here(output_path_rdata,paste0(output_file_name,".Rdata"))
   
   write.csv(bipolar_vector,file=output_file_path_csv,row.names=FALSE)
   save(bipolar_vector, file = output_file_path_rdata)
