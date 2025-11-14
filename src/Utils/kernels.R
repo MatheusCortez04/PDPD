@@ -17,7 +17,7 @@ generate_difussion_kernel= function(graph,normalized=TRUE,save_rdata=TRUE){
     Sys.sleep(1.5)
 
     if(save_rdata){
-        rdata_dir=here("src","Data","Kernels","RData")
+        rdata_dir=here(output_dir,"RData")
         create_dir(rdata_dir)
         output_path_rdata = here(rdata_dir,paste0(output_path, ".Rdata"))
         save(diffusion_kernel, file = output_path_rdata)
@@ -39,7 +39,7 @@ generate_pstep_kernel = function(graph,step=5,save_rdata=TRUE){
     cat("Csv file  saved to:", output_path_csv, "\n")
     Sys.sleep(1.5)
     if(save_rdata){
-        rdata_dir=here("src","Data","Kernels","RData")
+        rdata_dir=here(output_dir,"RData")
         create_dir(rdata_dir)
         output_path_rdata = here(rdata_dir,paste0(output_file_name, ".Rdata"))
         save(pstep_kernel, file = output_path_rdata)
@@ -63,7 +63,7 @@ generate_regularised_laplacian_kernel = function(graph,normalized=TRUE,save_rdat
     cat("Csv file  saved to:", output_path_csv, "\n")
     Sys.sleep(1.5)
     if(save_rdata){
-        rdata_dir=here("src","Data","Kernels","RData")
+        rdata_dir=here(output_dir,"RData")
         create_dir(rdata_dir)
         output_path_rdata = here(rdata_dir,paste0(output_file_name, ".Rdata"))
         save(regularised_laplacian_kernel, file = output_path_rdata)
@@ -88,7 +88,7 @@ generate_commute_time_kernel = function(graph,normalized=TRUE,save_rdata=TRUE){
     Sys.sleep(1.5)
 
     if(save_rdata){
-        rdata_dir=here("src","Data","Kernels","RData")
+        rdata_dir=here(output_dir,"RData")
         create_dir(rdata_dir)
         output_path_rdata = here(rdata_dir,paste0(output_file_name, ".Rdata"))
         save(commute_time_kernel, file = output_path_rdata)
@@ -110,7 +110,7 @@ generate_inverse_cosine_kernel = function(graph,save_rdata=TRUE){
     cat("Csv file  saved to:", path_csv, "\n")
     Sys.sleep(1.5)
     if(save_rdata){
-        rdata_dir=here("src","Data","Kernels","RData")
+        rdata_dir=here(output_dir,"RData")
         create_dir(rdata_dir)
         output_path_rdata = here(rdata_dir,paste0(output_file_name, ".Rdata"))
         save(inverse_cosine_kernel, file = output_path_rdata)
