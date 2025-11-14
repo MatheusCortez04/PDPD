@@ -93,3 +93,11 @@ build_protein_bipolar_df= function(){
   save(bipolar_vector, file = output_file_path_rdata)
   invisible(bipolar_vector)
 }
+
+
+create_dir <- function(path) {
+  if (!dir.exists(path)) {
+    message(paste("Creating Dir:", path))
+    dir.create(path, recursive = TRUE, mode = "0777")
+  }
+}
