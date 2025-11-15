@@ -19,7 +19,7 @@ generate_difussion_kernel= function(graph,normalized=TRUE,save_rdata=TRUE){
     if(save_rdata){
         rdata_dir=here("src","Data","Kernels","RData")
         create_dir(rdata_dir)
-        output_path_rdata = here(rdata_dir,paste0(output_path, ".Rdata"))
+        output_path_rdata = here(rdata_dir,paste0(output_file_name, ".Rdata"))
         save(diffusion_kernel, file = output_path_rdata)
         cat("R object 'diffusion_kernel' saved to:", output_path_rdata, "\n")
         Sys.sleep(1.5)
@@ -105,9 +105,9 @@ generate_inverse_cosine_kernel = function(graph,save_rdata=TRUE){
 
     cat("Calculating inverse cosine kernel for the graph...\n")
     inverse_cosine_kernel = inverseCosineKernel(graph)
-    write.csv(inverse_cosine_kernel, file =path_csv)
+    write.csv(inverse_cosine_kernel, file =output_path_csv)
     cat("Inverse cosine kernel calculated successfully!\n\n")
-    cat("Csv file  saved to:", path_csv, "\n")
+    cat("Csv file  saved to:", output_path_csv, "\n")
     Sys.sleep(1.5)
     if(save_rdata){
         rdata_dir=here("src","Data","Kernels","RData")
