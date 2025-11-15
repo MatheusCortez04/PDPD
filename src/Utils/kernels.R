@@ -205,3 +205,83 @@ generate_kernel_menu <- function() {
      kernel_function_mapper[[input]](ppi_graph)
   }
 }
+
+generate_drug_kernel_bipolar_score = function(){
+
+    difussion_kernel_score <- load_rdata(here("src","Data","Kernels","Score","BD","RData", "diffusion_kernel.Rdata"))
+    pstep_kernel_score <- load_rdata(here("src","Data","Kernels","Score","BD","RData", "pstep_kernel.Rdata"))
+    regularised_laplacian_kernel <- load_rdata(here("src","Data","Kernels","Score","BD","RData", "regularised_laplacian_kernel.Rdata"))
+    inverse_cosine_kernel <- load_rdata(here("src","Data","Kernels","Score","BD","RData", "inverse_cosine_kernel.Rdata"))
+    commute_time_kernel <- load_rdata(here("src","Data","Kernels","Score","BD","RData", "commute_time_kernel.Rdata"))
+
+    merge_df <- difussion_kernel_score %>%
+        left_join(pstep_kernel_score, by = "Drug_Id") %>%
+        left_join(regularised_laplacian_kernel, by = "Drug_Id") %>%
+        left_join(inverse_cosine_kernel, by = "Drug_Id") %>%
+        left_join(commute_time_kernel, by = "Drug_Id") %>%
+        rename(
+            difussion_kernel_score = Kernel_Score.x,
+            pstep_kernel_score = Kernel_Score.y,
+            regularised_laplacian_kernel_score = Kernel_Score.x.x,
+            inverse_cosine_kernel_score = Kernel_Score.y.y,
+            commute_time_kernel_score = Kernel_Score
+        ) %>%
+        rowwise() %>%
+        mutate(mean_score = mean(c_across(
+            c(
+              difussion_kernel_score,
+              pstep_kernel_score,
+              regularised_laplacian_kernel_score,
+              inverse_cosine_kernel_score,
+              commute_time_kernel_score
+            )
+        ), na.rm = TRUE)) %>%
+        ungroup()
+
+    output_csv_file = here("src","Data","Kernels","Score","BD","bipolar_kernel_average.csv")
+    output_rdata_file = here("src","Data","Kernels","Score","BD","RData","bipolar_average_score.RData")
+    write.csv(merge_df, file = output_csv_file, row.names = FALSE)
+    cat("\nCSV score saved to:", output_csv_file, "\n")
+    save(merge_df, file = output_rdata_file)
+    cat("\nRdata score saved to:", output_rdata_file, "\n")
+}
+
+generate_drug_kernel_mdd_score = function(){
+
+    difussion_kernel_score <- load_rdata(here("src","Data","Kernels","Score","MDD","RData", "diffusion_kernel.Rdata"))
+    pstep_kernel_score <- load_rdata(here("src","Data","Kernels","Score","MDD","RData", "pstep_kernel.Rdata"))
+    regularised_laplacian_kernel <- load_rdata(here("src","Data","Kernels","Score","MDD","RData", "regularised_laplacian_kernel.Rdata"))
+    inverse_cosine_kernel <- load_rdata(here("src","Data","Kernels","Score","MDD","RData", "inverse_cosine_kernel.Rdata"))
+    commute_time_kernel <- load_rdata(here("src","Data","Kernels","Score","MDD","RData", "commute_time_kernel.Rdata"))
+
+    merge_df <- difussion_kernel_score %>%
+        left_join(pstep_kernel_score, by = "Drug_Id") %>%
+        left_join(regularised_laplacian_kernel, by = "Drug_Id") %>%
+        left_join(inverse_cosine_kernel, by = "Drug_Id") %>%
+        left_join(commute_time_kernel, by = "Drug_Id") %>%
+        rename(
+            difussion_kernel_score = Kernel_Score.x,
+            pstep_kernel_score = Kernel_Score.y,
+            regularised_laplacian_kernel_score = Kernel_Score.x.x,
+            inverse_cosine_kernel_score = Kernel_Score.y.y,
+            commute_time_kernel_score = Kernel_Score
+        ) %>%
+        rowwise() %>%
+        mutate(mean_score = mean(c_across(
+            c(
+              difussion_kernel_score,
+              pstep_kernel_score,
+              regularised_laplacian_kernel_score,
+              inverse_cosine_kernel_score,
+              commute_time_kernel_score
+            )
+        ), na.rm = TRUE)) %>%
+        ungroup()
+
+    output_csv_file = here("src","Data","Kernels","Score","MDD","mdd_average_score.csv")
+    output_rdata_file = here("src","Data","Kernels","Score","MDD","RData","mdd_average_score.RData")
+    write.csv(merge_df, file = output_csv_file, row.names = FALSE)
+    cat("\nCSV score saved to:", output_csv_file, "\n")
+    save(merge_df, file = output_rdata_file)
+    cat("\nRdata score saved to:", output_rdata_file, "\n")
+}
