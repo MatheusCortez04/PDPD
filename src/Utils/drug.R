@@ -106,7 +106,7 @@ calculate_kernel_score = function(){
         cat("Starting mdd matrix multiplication...\n")
         mdd_score = drug_protein_matrix %*% kernel %*% mdd_vector$is_disease 
         mdd_score_df = data.frame(
-            Drug_Id =  rownames(drug_protein_matrix),
+            drugbank_id =  rownames(drug_protein_matrix),
             Kernel_Score = as.numeric(mdd_score)
 
         )
@@ -134,7 +134,7 @@ calculate_kernel_score = function(){
         cat("Starting bipolar matrix multiplication...\n")
         bipolar_score = drug_protein_matrix %*% kernel %*% bipolar_vector$is_disease 
         bipolar_score_df = data.frame(
-            Drug_Id =  rownames(drug_protein_matrix),
+            drugbank_id =  rownames(drug_protein_matrix),
             Kernel_Score = as.numeric(bipolar_score)
 
         )
@@ -184,14 +184,14 @@ generate_kernel_rank = function(disease = c("MDD", "BD")) {
         df = load_rdata(rdata_path)
         df[[kernel]] = rank(-df$Kernel_Score, ties.method = "average")
 
-        score_list[[kernel]] = df[, c("Drug_Id", kernel)]
+        score_list[[kernel]] = df[, c("drugbank_id", kernel)]
 
     }
 
     if (length(score_list) == 0) {
         stop("No RData files were found to generate the final ranking")
     }
-     final_rank_df = Reduce(function(x, y) merge(x, y, by="Drug_Id", all=TRUE),
+     final_rank_df = Reduce(function(x, y) merge(x, y, by="drugbank_id", all=TRUE),
                             score_list)
 
         final_rank_df$Mean_Rank = rowMeans(final_rank_df[, kernel_names], na.rm = TRUE)

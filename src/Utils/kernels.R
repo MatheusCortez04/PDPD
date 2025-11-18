@@ -215,10 +215,10 @@ generate_drug_kernel_bipolar_score = function(){
     commute_time_kernel <- load_rdata(here("src","Data","Kernels","Score","BD","RData", "commute_time_kernel.Rdata"))
 
     merge_df <- difussion_kernel_score %>%
-        left_join(pstep_kernel_score, by = "Drug_Id") %>%
-        left_join(regularised_laplacian_kernel, by = "Drug_Id") %>%
-        left_join(inverse_cosine_kernel, by = "Drug_Id") %>%
-        left_join(commute_time_kernel, by = "Drug_Id") %>%
+        left_join(pstep_kernel_score, by = "drugbank_id") %>%
+        left_join(regularised_laplacian_kernel, by = "drugbank_id") %>%
+        left_join(inverse_cosine_kernel, by = "drugbank_id") %>%
+        left_join(commute_time_kernel, by = "drugbank_id") %>%
         rename(
             difussion_kernel_score = Kernel_Score.x,
             pstep_kernel_score = Kernel_Score.y,
@@ -236,7 +236,8 @@ generate_drug_kernel_bipolar_score = function(){
               commute_time_kernel_score
             )
         ), na.rm = TRUE)) %>%
-        ungroup()
+        ungroup() %>%
+        arrange(desc(mean_score))
 
     output_csv_file = here("src","Data","Kernels","Score","BD","bipolar_average_score.csv")
     output_rdata_file = here("src","Data","Kernels","Score","BD","RData","bipolar_average_score.RData")
@@ -255,10 +256,10 @@ generate_drug_kernel_mdd_score = function(){
     commute_time_kernel <- load_rdata(here("src","Data","Kernels","Score","MDD","RData", "commute_time_kernel.Rdata"))
 
     merge_df <- difussion_kernel_score %>%
-        left_join(pstep_kernel_score, by = "Drug_Id") %>%
-        left_join(regularised_laplacian_kernel, by = "Drug_Id") %>%
-        left_join(inverse_cosine_kernel, by = "Drug_Id") %>%
-        left_join(commute_time_kernel, by = "Drug_Id") %>%
+        left_join(pstep_kernel_score, by = "drugbank_id") %>%
+        left_join(regularised_laplacian_kernel, by = "drugbank_id") %>%
+        left_join(inverse_cosine_kernel, by = "drugbank_id") %>%
+        left_join(commute_time_kernel, by = "drugbank_id") %>%
         rename(
             difussion_kernel_score = Kernel_Score.x,
             pstep_kernel_score = Kernel_Score.y,
@@ -276,7 +277,9 @@ generate_drug_kernel_mdd_score = function(){
               commute_time_kernel_score
             )
         ), na.rm = TRUE)) %>%
-        ungroup()
+        ungroup() %>%
+        arrange(desc(mean_score))
+        
 
     output_csv_file = here("src","Data","Kernels","Score","MDD","mdd_average_score.csv")
     output_rdata_file = here("src","Data","Kernels","Score","MDD","RData","mdd_average_score.RData")
