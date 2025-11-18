@@ -238,7 +238,7 @@ generate_drug_kernel_bipolar_score = function(){
         ), na.rm = TRUE)) %>%
         ungroup()
 
-    output_csv_file = here("src","Data","Kernels","Score","BD","bipolar_kernel_average.csv")
+    output_csv_file = here("src","Data","Kernels","Score","BD","bipolar_average_score.csv")
     output_rdata_file = here("src","Data","Kernels","Score","BD","RData","bipolar_average_score.RData")
     write.csv(merge_df, file = output_csv_file, row.names = FALSE)
     cat("\nCSV score saved to:", output_csv_file, "\n")
