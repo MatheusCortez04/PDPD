@@ -156,6 +156,8 @@ calculate_kernel_score = function(){
         }
         generate_kernel_rank("MDD")
         generate_kernel_rank("BD")
+        generate_drug_kernel_bipolar_score()
+        generate_drug_kernel_mdd_score()
 } 
 
 generate_kernel_rank = function(disease = c("MDD", "BD")) {
