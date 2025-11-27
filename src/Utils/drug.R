@@ -1,4 +1,5 @@
 library(here)
+library(purrr)
 source(here("src","Utils","utils.R"))
 generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,drug_nodes){
   cat("\n--- Generating Drug Target Matrix ---\n")
@@ -164,46 +165,36 @@ generate_kernel_rank = function(disease = c("MDD", "BD")) {
     disease = match.arg(disease)
 
     cat("[WARN] Building Average Rank to Disease:", disease, "\n")
-
     kernel_names = c(
         "diffusion_kernel","pstep_kernel","regularised_laplacian_kernel",
         "commute_time_kernel","inverse_cosine_kernel"
     )
-
     score_base_dir = here("src", "Data", "Kernels", "Score", disease)
-    score_list = list()
+    rdata_dir <- here(score_base_dir, "RData")
+    list_of_rank = purrr::map(kernel_names,function(kernel_name){
 
-    for (kernel in kernel_names) {
-        rdata_path = here(score_base_dir, "RData", paste0(kernel, ".Rdata"))
-
-        if (!file.exists(rdata_path)) {
-            cat("[WARN] Score RData not  found:", rdata_path, "\n")
-            next()
+        file_path <- here(rdata_dir, paste0(kernel_name, ".Rdata"))
+        if (!file.exists(file_path)) {
+            cat("[WARN] Score RData not  found:", file_path, "\n")
+            return(NULL)
         }
-
-        df = load_rdata(rdata_path)
-        df[[kernel]] = rank(-df$Kernel_Score, ties.method = "average")
-
-        score_list[[kernel]] = df[, c("Drug_Id", kernel)]
-
-    }
-
-    if (length(score_list) == 0) {
-        stop("No RData files were found to generate the final ranking")
-    }
-     final_rank_df = Reduce(function(x, y) merge(x, y, by="Drug_Id", all=TRUE),
-                            score_list)
-
-        final_rank_df$Mean_Rank = rowMeans(final_rank_df[, kernel_names], na.rm = TRUE)
-
-    final_rank_df$Mean_Rank = rowMeans(final_rank_df[, -1], na.rm = TRUE)
-    final_rank_df = final_rank_df[order(final_rank_df$Mean_Rank), ]
-    output_csv = here(score_base_dir, "average_kernel_rank.csv")
-    write.csv(final_rank_df, file = output_csv, row.names = FALSE)
-
-    cat("\n✔ Average Kernel Rank save in: ", output_csv, "\n")
-
-    return(final_rank_df)
+        df_score = load_rdata(file_path)
+        df_score %>% 
+            select(Drug_Id,Kernel_Score) %>%
+            mutate(!!kernel_name := rank(-Kernel_Score, ties.method = "average")) %>%
+            select(Drug_Id, all_of(kernel_name))
+            }) %>%
+            compact()
+        if (length(list_of_rank) == 0) return("Nenhum arquivo encontrado.")
+        final_kernel_rank_df = list_of_rank %>%
+            reduce(full_join, by = "Drug_Id")
+        final_kernel_rank_df <- final_kernel_rank_df %>%
+        rowwise() %>%
+            mutate(Mean_Rank = mean(c_across(where(is.numeric)), na.rm = TRUE)) %>%
+            ungroup() %>%
+            arrange(Mean_Rank)
+        output_csv <- here(score_base_dir, "average_kernel_rank.csv")
+        write_csv(final_kernel_rank_df, output_csv)
 }
 
 
