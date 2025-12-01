@@ -29,9 +29,9 @@ generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,dru
 scoring_drug_disease_menu = function(){
   while(TRUE){
     clear_console()
-    cat("--- Drug Score  Menu ---\n\n")
+    cat("--- Drug Menu ---\n\n")
     cat(" [1] Generate Drug Protein Matrix\n")
-    cat(" [2] Generate Kernel Score \n")
+    cat(" [2] Generate Drug Score \n")
     cat(" [B] Back\n\n")
 
     input = readline(prompt = "Choice option: ")

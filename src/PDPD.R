@@ -11,7 +11,7 @@ main= function(){
         while(TRUE){
             cat("--- Main Menu ---\n\n")
             cat(" [1] Kernel Menu\n")
-            cat(" [2] Drug-Disease Menu\n")
+            cat(" [2] Drug Menu\n")
             cat(" [Q] Exit\n\n")
             input =  readline(prompt = "Enter your choice: ")
             if (toupper(trimws(input)) == "Q") break
