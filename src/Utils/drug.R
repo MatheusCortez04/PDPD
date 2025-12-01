@@ -11,23 +11,7 @@ generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,dru
     output_path_csv = here(drug_dir,paste0(output_file_name, ".csv"))
     output_path_rdata = here(drug_Rdata_dir,paste0(output_file_name, ".Rdata"))
 
-
-    matrix_drug_protein = drug_target_df %>% 
-    filter( entrez_id %in% protein_nodes) %>%
-    distinct(drugbank_id, entrez_id) %>%
-    mutate(
-      drugbank_id = factor(drugbank_id, levels = drug_nodes),
-      entrez_id = factor(entrez_id, levels = protein_nodes),
-      value=1
-    ) %>%   
-    pivot_wider(
-        id_cols = drugbank_id, 
-        names_from = entrez_id,
-        values_from = value,
-        values_fill = 0,
-        names_expand = TRUE,
-        id_expand = TRUE
-    ) %>% arrange(drugbank_id)
+    matrix_drug_protein = build_drug_protein_matrix(drug_target_df,protein_nodes,drug_nodes)
 
     write.csv(matrix_drug_protein, file =output_path_csv,row.names=FALSE)
     cat("Csv file  saved to:", output_path_csv, "\n")
@@ -204,6 +188,28 @@ generate_kernel_rank = function(disease = c("MDD", "BD")) {
     cat("\n✔ Average Kernel Rank save in: ", output_csv, "\n")
 
     return(final_rank_df)
+}
+
+build_drug_protein_matrix= function(data_frame,protein_nodes,drug_nodes){
+  data_frame %>%
+    filter(entrez_id %in% protein_nodes) %>%
+    distinct(drugbank_id, entrez_id) %>%
+    #O Value é utilizado para que cada iteração do dataframe original contenha o valor 1
+    # e as demais lacunas sejam preenchidas com zero
+    mutate(
+      drugbank_id = factor(drugbank_id, levels = drug_nodes),
+      entrez_id = factor(entrez_id, levels = protein_nodes),
+      value = 1
+    ) %>%
+    pivot_wider(
+      id_cols = drugbank_id,
+      names_from = entrez_id,
+      values_from = value,
+      values_fill = 0,
+      names_expand = TRUE,
+      id_expand = TRUE
+    ) %>%
+    arrange(drugbank_id)
 }
 
 
