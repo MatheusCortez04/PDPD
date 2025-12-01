@@ -1,4 +1,5 @@
 library(here)
+library(purrr)
 source(here("src","Utils","utils.R"))
 generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,drug_nodes){
   cat("\n--- Generating Drug Target Matrix ---\n")
@@ -54,29 +55,18 @@ drug_function_mapper = list(
         generate_ordered_drug_protein_matrix(drug_target_df,protein_nodes,drug_nodes)
     },
     '2' = function(){
-        calculate_kernel_score()
+        calculate_drug_score()
     }
 )
 
-calculate_kernel_score = function(){
-    drug_gene__matrix_file_path="drug_target_matrix"
-    kernel_file_names = c('diffusion_kernel','pstep_kernel','regularised_laplacian_kernel','commute_time_kernel','inverse_cosine_kernel')
-    drug_target_rdata_file_path = here("src","Data","Drug","RData",paste0(drug_gene__matrix_file_path, ".Rdata"))
-
-    drug_protein_file_already_exists = file.exists(drug_target_rdata_file_path)
-    if(!drug_protein_file_already_exists){
-        cat("\n[Error]: Required file Drug target matrix not found.\n This file is necessary to calculate the score. Would you like to create it now\n")
-        Sys.sleep(1.5)
-        return()
-    }
-
-    drug_protein_matrix = load_rdata(drug_target_rdata_file_path)
-    mdd_vector = build_protein_mdd_df()
-    bipolar_vector =build_protein_bipolar_df()
-
-    for (kernel_name in kernel_file_names){
-        cat("\n--- Generating Score Kernel ---\n")
-
+calculate_drug_score = function(){
+    kernel_file_names = c('diffusion_kernel','')
+    drug_protein_matrix = load_drug_target_matrix()
+    disease_data <- list(
+        MDD = list(name = "MDD", vector = build_protein_mdd_df()),
+        BD  = list(name = "BD",  vector = build_protein_bipolar_df())
+    )
+    purrr::walk(kernel_file_names,function(kernel_name){
         kernel_path_rdata = here("src","Data","Kernels","RData", paste0(kernel_name, ".Rdata"))
         kernel_file_exists = file.exists(kernel_path_rdata)
         if(!kernel_file_exists){
@@ -84,67 +74,17 @@ calculate_kernel_score = function(){
             Sys.sleep(1)
             next()
         }
-
         kernel = load_rdata(kernel_path_rdata)
-
-        cat("Starting mdd matrix multiplication...\n")
-        mdd_score = drug_protein_matrix %*% kernel %*% mdd_vector$is_disease 
-        mdd_score_df = data.frame(
-            drugbank_id =  rownames(drug_protein_matrix),
-            Kernel_Score = as.numeric(mdd_score)
-
-        )
-        mdd_score_df = mdd_score_df %>% arrange(desc(Kernel_Score))
-        cat("Matrix multiplication completed!\n")
-
-
-        kernel_score_dir = here("src","Data","Kernels","Score")
-        mdd_score_dir =here(kernel_score_dir,"MDD")
-        create_dir(mdd_score_dir)
-
-        mdd_score_rdata_dir = here(mdd_score_dir,"RData")
-        create_dir(mdd_score_rdata_dir)
-
-        
-        output_mdd_file_path_csv = here(mdd_score_dir, paste0(kernel_name, ".csv"))
-        output_mdd_file_path_Rdata = here(mdd_score_rdata_dir,paste0(kernel_name, ".Rdata"))
-
-        write.csv(mdd_score_df, file = output_mdd_file_path_csv,row.names=FALSE)
-        cat("CSV score saved to:", output_mdd_file_path_csv, "\n")
-        save(mdd_score_df, file = output_mdd_file_path_Rdata)
-        cat("R object score saved to:", output_mdd_file_path_Rdata, "\n")
-
-
-        cat("Starting bipolar matrix multiplication...\n")
-        bipolar_score = drug_protein_matrix %*% kernel %*% bipolar_vector$is_disease 
-        bipolar_score_df = data.frame(
-            drugbank_id =  rownames(drug_protein_matrix),
-            Kernel_Score = as.numeric(bipolar_score)
-
-        )
-        bipolar_score_df = bipolar_score_df %>% arrange(desc(Kernel_Score))
-        cat("Matrix multiplication completed!\n")
-        bipolar_score_dir = here(kernel_score_dir,"BD")
-        create_dir(bipolar_score_dir)
-        
-        bipolar_score_rdata_dir = here(bipolar_score_dir,"RData")
-        create_dir(bipolar_score_rdata_dir)
-
-        output_bipolar_file_path_csv = here(bipolar_score_dir, paste0(kernel_name, ".csv"))
-        output_bipolar_file_path_Rdata =here(bipolar_score_rdata_dir,paste0(kernel_name, ".Rdata")) 
-
-        write.csv(bipolar_score_df, file = output_bipolar_file_path_csv,row.names=FALSE)
-        cat("CSV score saved to:", output_bipolar_file_path_csv, "\n")
-        save(bipolar_score_df, file = output_bipolar_file_path_Rdata)
-        cat("R object score saved to:", output_bipolar_file_path_Rdata, "\n")
-        }
-        generate_kernel_rank("MDD")
-        generate_kernel_rank("BD")
-        generate_drug_kernel_bipolar_score()
-        generate_drug_kernel_mdd_score()
+        list_data = list(MDD = disease_data$MDD, BD = disease_data$BD)
+        list_data %>%
+            purrr::walk(process_scores_for_disease, 
+                 kernel = kernel, 
+                 drug_protein_matrix = drug_protein_matrix, 
+                 kernel_name = kernel_name)
+    })
 } 
 
-generate_kernel_rank = function(disease = c("MDD", "BD")) {
+generate_drug_rank = function(disease = c("MDD", "BD")) {
     disease = match.arg(disease)
 
     cat("[WARN] Building Average Rank to Disease:", disease, "\n")
@@ -212,5 +152,41 @@ build_drug_protein_matrix= function(data_frame,protein_nodes,drug_nodes){
     arrange(drugbank_id)
 }
 
+load_drug_target_matrix = function() {
+    drug_target_rdata_file_path = here("src","Data","Drug","RData","drug_target_matrix.Rdata")
+    drug_protein_file_already_exists = file.exists(drug_target_rdata_file_path)
+    if(!drug_protein_file_already_exists){
+        cat("\n[Error]: Required file Drug target matrix not found.\n This file is necessary to calculate the score. Would you like to create it now\n")
+        Sys.sleep(1.5)
+        return()
+    }
+  invisible(load_rdata(drug_target_rdata_file_path))
+}
 
+process_scores_for_disease = function(kernel,disease_info,drug_protein_matrix,kernel_name){
+    
+    disease_name <- disease_info$name
+    disease_vector <- disease_info$vector
 
+    cat(paste("\n--- Calculando", disease_name, "score para", kernel_name, "---\n"))
+    score_vector = drug_protein_matrix %*% kernel %*% disease_vector$is_disease
+
+    score_df = data.frame(
+        drugbank_id = rownames(drug_protein_matrix),
+        drug_score = as.numeric(score_vector)
+    ) %>%
+        arrange(desc(drug_score))
+
+    output_dir <- here("src", "Data", "Kernels", "Score", disease_name)
+    rdata_sub_dir <- here(output_dir, "RData")
+
+    dir.create(rdata_sub_dir, recursive = TRUE, showWarnings = FALSE)
+    output_path_csv <- here(output_dir, paste0(kernel_name, ".csv"))
+    output_path_rdata <- here(rdata_sub_dir, paste0(kernel_name, ".Rdata"))
+
+    write.csv(score_df, file = output_path_csv, row.names = FALSE)
+
+    save(score_df, file = output_path_rdata)
+    cat(paste("   ✔ Score salvo em:", output_path_csv, "\n"))
+    invisible(score_df)
+}
