@@ -1,0 +1,49 @@
+"drug_name"	"drugbank_id"	"ind_name"	"ind_id"	"NCT"	"status"	"phase"	"DetailedStatus"
+"escitalopram"	"DB01175"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"fluoxetine"	"DB00472"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"isocarboxazid"	"DB01247"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"mianserin"	"DB06148"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"mirtazapine"	"DB00370"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"nefazodone"	"DB01149"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"olanzapine"	"DB00334"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"paroxetine"	"DB00715"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"reboxetine"	"DB00234"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"selegiline"	"DB01037"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"tranylcypromine"	"DB00752"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"trazodone"	"DB00656"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"venlafaxine"	"DB00285"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"vilazodone"	"DB06684"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"bupropion"	"DB01156"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"desvenlafaxine"	"DB06700"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"gepirone"	"DB12184"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"vortioxetine"	"DB09068"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"levomilnacipran"	"DB08918"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"brexpiprazole"	"DB09128"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"citalopram"	"DB00215"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"dextromethorphan"	"DB00514"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"dosulepin"	"DB09167"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"duloxetine"	"DB00476"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"agomelatine"	"DB06594"	"Major Depressive Disorder"	"C1269683"	NA	"Approved"	NA	NA
+"modafinil"	"DB00745"	"Major Depressive Disorder"	"C1269683"	"NCT03620253"	"Terminated"	"Phase 3"	"Principal Investigator left study site"
+"duloxetine"	"DB00476"	"Major Depressive Disorder"	"C1269683"	"NCT03068247"	"Withdrawn"	"Phase 3"	"Institution was unable to manufacture radiotracer that was central to the protocol. Study transferred to another institution."
+"modafinil"	"DB00745"	"Major Depressive Disorder"	"C1269683"	"NCT04317001"	"Withdrawn"	"Phase 3"	"Researcher leading the study moved institutions study not feasible"
+"ketamine"	"DB01221"	"Major Depressive Disorder"	"C1269683"	"NCT02882711"	"Terminated"	"Phase 2"	"Increasing off-label practice of IV ketamine administration for treatment-resistant depression."
+"ketamine"	"DB01221"	"Major Depressive Disorder"	"C1269683"	"NCT02661061"	"Terminated"	"Phase 1"	"Inadequate recruitment"
+NA	"DB00683"	"Major Depressive Disorder"	"C1269683"	"NCT02661061"	"Terminated"	"Phase 1"	"Inadequate recruitment"
+"ketamine"	"DB01221"	"Major Depressive Disorder"	"C1269683"	"NCT03977675"	"Terminated"	"Phase 1"	"PI left the institution"
+"lurasidone"	"DB08815"	"Major Depressive Disorder"	"C1269683"	"NCT01423240"	"Withdrawn"	"Phase 3"	NA
+"duloxetine"	"DB00476"	"Major Depressive Disorder"	"C1269683"	"NCT01145755"	"Terminated"	"Phase 2"	NA
+"ketamine"	"DB01221"	"Major Depressive Disorder"	"C1269683"	"NCT05193318"	"Terminated"	"Phase 2"	"Primary Investigator leaving institution"
+"paroxetine"	"DB00715"	"Major Depressive Disorder"	"C1269683"	"NCT00400088"	"Terminated"	"Phase 3"	"Recruitment difficulties"
+NA	"DB14509"	"Major Depressive Disorder"	"C1269683"	"NCT00400088"	"Terminated"	"Phase 3"	"Recruitment difficulties"
+"riluzole"	"DB00740"	"Major Depressive Disorder"	"C1269683"	"NCT01703039"	"Terminated"	"Phase 2"	"PI departure, slow recruitment"
+NA	"DB01104"	"Major Depressive Disorder"	"C1269683"	"NCT01703039"	"Terminated"	"Phase 2"	"PI departure, slow recruitment"
+"lisdexamfetamine"	"DB01255"	"Major Depressive Disorder"	"C1269683"	"NCT01436175"	"Terminated"	"Phase 3"	"SPD489 failed to demonstrate a benefit as adjunctive treatment to antidepressants. Termination was not related to any new safety findings."
+"ketamine"	"DB01221"	"Major Depressive Disorder"	"C1269683"	"NCT01957410"	"Terminated"	"Phase 2"	"Clinical Team decision to terminate the study after the results from Cohort 1 did not support conducting Cohort 2."
+"quetiapine"	"DB01224"	"Major Depressive Disorder"	"C1269683"	"NCT01189318"	"Withdrawn"	"Phase 2"	NA
+"quetiapine"	"DB01224"	"Major Depressive Disorder"	"C1269683"	"NCT00868374"	"Terminated"	"Phase 3"	"Study terminated due to low enrollment"
+"duloxetine"	"DB00476"	"Major Depressive Disorder"	"C1269683"	"NCT01288079"	"Terminated"	"Phase 2"	NA
+"citalopram"	"DB00215"	"Major Depressive Disorder"	"C1269683"	"NCT00642694"	"Terminated"	"Phase 3"	"Enrollment discontinued based on mutually agreed upon decision by PI and funding sponsor"
+NA	"DB08997"	"Major Depressive Disorder"	"C1269683"	"NCT00642694"	"Terminated"	"Phase 3"	"Enrollment discontinued based on mutually agreed upon decision by PI and funding sponsor"
+"ketamine"	"DB01221"	"Major Depressive Disorder"	"C1269683"	"NCT03051945"	"Withdrawn"	"Phase 3"	"Unable to perform brain imaging"
+"venlafaxine"	"DB00285"	"Major Depressive Disorder"	"C1269683"	"NCT00766870"	"Terminated"	"Phase 2"	"Study was previously paused and is now terminated"

@@ -206,7 +206,7 @@ process_scores_for_disease = function(kernel,disease_info,drug_protein_matrix,ke
 }
 generate_roc_curve_mdd = function(){
     mdd_repodb = read_tsv(here("src","Data","REPODB","MDD_REPODB.tsv"), show_col_types = FALSE)
-    mdd_repodb = mdd_repodb %>% filter(status=="Approved")
+    # mdd_repodb = mdd_repodb %>% filter(status=="Approved")
     cat("Total de drogas valida pelo RepoDb: ", nrow(mdd_repodb), "\n")
     mdd_rank_file_path = here("src", "Data", "Drug", "Score", "MDD","average_kernel_rank.csv")
     mdd_average_rank = read.csv(mdd_rank_file_path)
