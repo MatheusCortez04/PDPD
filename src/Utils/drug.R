@@ -76,11 +76,14 @@ drug_function_mapper = list(
 
 calculate_drug_score = function(){
     kernel_names = c(
-        "diffusion_kernel"
+        "diffusion_kernel","pstep_kernel","regularised_laplacian_kernel",
+        "commute_time_kernel","inverse_cosine_kernel"
     )
     drug_protein_matrix = load_drug_target_matrix()
     disease_data <- list(
-        MDD = list(name = "MDD", vector = build_protein_mdd_df())
+        MDD = list(name = "MDD", vector = build_protein_mdd_df()),
+        BD = list(name = "BD", vector = build_protein_bipolar_df())
+        
     )
     purrr::walk(kernel_names,function(kernel_name){
         kernel_path_rdata = here("src","Data","Kernels","RData", paste0(kernel_name, ".Rdata"))
@@ -176,46 +179,7 @@ load_drug_target_matrix = function() {
 }
 
 process_scores_for_disease = function(kernel,disease_info,drug_protein_matrix,kernel_name){
-    
-    disease_name <- disease_info$name
-    disease_vector <- disease_info$vector
-
-    cat(paste("\n--- Calculando", disease_name, "score para", kernel_name, "---\n"))
-
-    score_vector =  kernel %*% disease_vector$is_disease
-
-
-    protein_ids <- rownames(kernel)
-    # score_df = data.frame(
-    #     drugbank_id = rownames(drug_protein_matrix),
-    #     drug_score = as.numeric(score_vector)
-    # ) %>%
-    #     arrange(desc(drug_score))
-
-    v_difundido_vec <- as.vector(score_vector)
-
-
-    protein_scores_df <- data.frame(
-        Protein_ID = protein_ids,
-        Disease_Score = v_difundido_vec
-    )
-        glimpse(protein_scores_df)
-    protein_scores_df_sorted <- protein_scores_df[order(protein_scores_df$Disease_Score, decreasing = TRUE), ]
-    output_dir <- here("teste", disease_name)
-    rdata_sub_dir <- here(output_dir, "RData")
-
-    cat("\n--- Top 10 Proteínas para MDD (Score de Difusão) ---\n")
-    print(head(protein_scores_df_sorted, 10))
-
-    dir.create(rdata_sub_dir, recursive = TRUE, showWarnings = FALSE)
-    output_path_csv <- here(output_dir, paste0(kernel_name, ".csv"))
-    output_path_rdata <- here(rdata_sub_dir, paste0(kernel_name, ".Rdata"))
-
-    write.csv(protein_scores_df_sorted, file = output_path_csv, row.names = FALSE)
-
-    save(score_vector, file = output_path_rdata)
-    cat(paste("   ✔ Score salvo em:", output_path_csv, "\n"))
-    invisible(score_vector)
+    generator_gene_score_by_kernel(kernel,kernel_name,disease_info)
 }
 generate_roc_curve_mdd = function(){
     mdd_repodb = read_tsv(here("src","Data","REPODB","MDD_REPODB.tsv"), show_col_types = FALSE)
@@ -346,4 +310,19 @@ generate_recall_k_MDD = function(){
     pdf_path <- here("src", "Relatorios", "ROC", "MDD", "recall_at_k_MDD.pdf")
     ggsave(pdf_path, plot = g, width = 8, height = 6)
 
+}
+generator_gene_score_by_kernel= function(kernel,kernel_name,disease_info){
+    disease_name = disease_info$name
+    disease_vector = disease_info$vector
+
+    score_vector =  kernel %*% disease_vector$is_disease
+    protein_scores_df = data.frame(
+        entrez_ids=  rownames(kernel),
+        gene_score = score_vector
+    )
+    output_dir = here("src","Data","Kernels","Score",disease_name)
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+    output_path_csv = here(output_dir, paste0(kernel_name, ".csv"))
+    write.csv(protein_scores_df, file = output_path_csv, row.names = FALSE)
+    
 }
