@@ -20,7 +20,9 @@ get_ppi_nodes = function(){
     print(paste("Unique proteins in PPI Dataframe: ",length(unique_ordered_proteins_in_ppi_df)))
     invisible(unique_ordered_proteins_in_ppi_df)
 }
-get_drug_nodes = function(drug_target_df){
+get_drug_nodes = function(){
+    drug_target_df  = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv"), sep=",")
+    cat("Drug Target file reading complete.\n")
     drug_ids = drug_target_df$drugbank_id
     print(paste("All drugs in Drug to target Dataframe: ",length(drug_ids)))
     unique_drugs_in_df = unique(drug_ids)
