@@ -9,7 +9,9 @@ is_valid_input_boolean = function(input){
 }
 
 
-get_ppi_nodes = function(ppi_df){
+get_ppi_nodes = function(){
+    ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
+    cat("PPI  file reading complete.\n")
     proteinA_entrezid = ppi_df$proteinA_entrezid
     proteinB_entrezid = ppi_df$proteinB_entrezid
     all_protein_in_ppi_df = c(proteinA_entrezid,proteinB_entrezid)
@@ -59,8 +61,7 @@ get_bipolar_disorder_genes = function(){
 }
 
 build_protein_mdd_df= function(){
-  ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
-  all_proteins = get_ppi_nodes(ppi_df)
+  all_proteins = get_ppi_nodes()
   mdd_genes = get_mdd_genes()
   cat("Creating MDD protein DataFrame....")
   mdd_vector = data.frame(gene_id=all_proteins)
@@ -83,8 +84,7 @@ build_protein_mdd_df= function(){
 
 
 build_protein_bipolar_df= function(){
-  ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
-  all_proteins = get_ppi_nodes(ppi_df)
+  all_proteins = get_ppi_nodes()
   bipolar_genes = get_bipolar_disorder_genes()
   cat("Creating BD protein DataFrame....")
   bipolar_vector = data.frame(gene_id=all_proteins)
