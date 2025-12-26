@@ -178,9 +178,14 @@ score_genes_for_disease = function(kernel,disease_info,kernel_name){
     compute_gene_scores_from_kernel(kernel,kernel_name,disease_info)
 }
 generate_roc_curve_mdd = function(){
+
+    drug_target_df  = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv"), sep=",")
     mdd_repodb = read_tsv(here("src","Data","REPODB","MDD_REPODB.tsv"), show_col_types = FALSE)
-    # mdd_repodb = mdd_repodb %>% filter(status=="Approved")
-    cat("Total de drogas valida pelo RepoDb: ", nrow(mdd_repodb), "\n")
+     mdd_repodb =  dplyr::semi_join(mdd_repodb,drug_target_df,by='drugbank_id')%>% 
+        filter(status=="Approved")
+        
+    cat("Total de drogas validas pelo RepoDb: ", nrow(mdd_repodb), "\n")
+
     mdd_rank_file_path = here("src", "Data", "Drug", "Score", "MDD","average_kernel_rank.csv")
     mdd_average_rank = read.csv(mdd_rank_file_path)
 
