@@ -320,5 +320,20 @@ compute_gene_scores_from_kernel= function(kernel,kernel_name,disease_info){
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
     output_path_csv = here(output_dir, paste0(kernel_name, ".csv"))
     write.csv(protein_scores_df, file = output_path_csv, row.names = FALSE)
-    
+
+}
+
+
+load_drug_target_df = function(){
+    drug_target_file_path = here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv")
+    drug_target_file_already_exists = file.exists(drug_target_file_path)
+    if(!drug_target_file_already_exists){
+        cat("\n[Error]: Required file Drug target file not found.\n This file is necessary to calculate the score. Would you like to create it now\n")
+        Sys.sleep(1.5)
+        return()
+    }
+    drug_target_df = read.csv(drug_target_file_path)
+    drug_target_df %>% dplyr::distinct(drugbank_id, entrez_id) %>%
+        dplyr::mutate(entrez_id = as.character(entrez_id))
+    invisible(drug_target_df)
 }
