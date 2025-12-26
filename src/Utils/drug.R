@@ -313,7 +313,7 @@ compute_gene_scores_from_kernel= function(kernel,kernel_name,disease_info){
 
     score_vector =  kernel %*% disease_vector$is_disease
     protein_scores_df = data.frame(
-        entrez_ids=  rownames(kernel),
+        entrez_id=  rownames(kernel),
         gene_score = score_vector
     )
     output_dir = here("src","Data","Kernels","Score",disease_name)
@@ -336,4 +336,36 @@ load_drug_target_df = function(){
     drug_target_df %>% dplyr::distinct(drugbank_id, entrez_id) %>%
         dplyr::mutate(entrez_id = as.character(entrez_id))
     invisible(drug_target_df)
+}
+
+summarise_drug_max_score = function(){
+    diseases = c("MDD", "BD")
+    kernel_names = c(
+        "diffusion_kernel","pstep_kernel","regularised_laplacian_kernel",
+        "commute_time_kernel","inverse_cosine_kernel"
+    )
+    for(disease in diseases){
+        for(kernel in kernel_names){
+            gene_score_path = here("src","Data","Kernels","Score",disease,paste0(kernel, ".csv"))
+            if (!file.exists(gene_score_path)) next
+ 
+            gene_score_df = read.csv(gene_score_path)
+            drug_target_df= load_drug_target_df()
+
+            drug_gene_score_df = gene_score_df %>%
+                dplyr::left_join(drug_target_df,by="entrez_id")
+            drug_gene_score_df =drug_gene_score_df %>%
+                dplyr::group_by(drugbank_id) %>%
+                dplyr::summarise(
+                    max_gene_score = max(gene_score, na.rm = TRUE),
+                    top_entrez_id = entrez_id[which.max(gene_score)],
+                    .groups = "drop" ) %>%  
+                dplyr::arrange(desc(max_gene_score))
+            out_dir  <- here("src","Data","Drug","Score", disease)
+            dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+            out_path = here(out_dir,paste0(kernel, ".csv"))
+            write.csv(drug_gene_score_df,out_path,row.names=FALSE)
+        }
+        
+    }
 }
