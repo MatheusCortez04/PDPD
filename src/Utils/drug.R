@@ -175,7 +175,7 @@ load_drug_target_matrix = function() {
 }
 
 score_genes_for_disease = function(kernel,disease_info,kernel_name){
-    generator_gene_score_by_kernel(kernel,kernel_name,disease_info)
+    compute_gene_scores_from_kernel(kernel,kernel_name,disease_info)
 }
 generate_roc_curve_mdd = function(){
     mdd_repodb = read_tsv(here("src","Data","REPODB","MDD_REPODB.tsv"), show_col_types = FALSE)
@@ -307,7 +307,7 @@ generate_recall_k_MDD = function(){
     ggsave(pdf_path, plot = g, width = 8, height = 6)
 
 }
-generator_gene_score_by_kernel= function(kernel,kernel_name,disease_info){
+compute_gene_scores_from_kernel= function(kernel,kernel_name,disease_info){
     disease_name = disease_info$name
     disease_vector = disease_info$vector
 
