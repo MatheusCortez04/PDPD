@@ -1,7 +1,6 @@
 library(here)
 library(purrr)
 library(readr)
-source(here("src","Utils","utils.R"))
 generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,drug_nodes){
   cat("\n--- Generating Drug Target Matrix ---\n")
     output_file_name="drug_target_matrix"
@@ -59,7 +58,6 @@ drug_function_mapper = list(
         generate_ordered_drug_protein_matrix(drug_target_df,protein_nodes,drug_nodes)
     },
     '2' = function(){
-        calculate_drug_score()
         generate_drug_rank("MDD")
         generate_drug_rank("BD")
     },
@@ -74,13 +72,12 @@ drug_function_mapper = list(
     }
 )
 
-calculate_drug_score = function(){
+run_drug_scoring = function(){
     kernel_names = c(
         "diffusion_kernel","pstep_kernel","regularised_laplacian_kernel",
         "commute_time_kernel","inverse_cosine_kernel"
     )
-    drug_protein_matrix = load_drug_target_matrix()
-    disease_data <- list(
+    disease_data = list(
         MDD = list(name = "MDD", vector = build_protein_mdd_df()),
         BD = list(name = "BD", vector = build_protein_bipolar_df())
         
@@ -93,15 +90,14 @@ calculate_drug_score = function(){
             Sys.sleep(1)
             next()
         }
+ 
         kernel = load_rdata(kernel_path_rdata)
-        list_data = list(MDD = disease_data$MDD, BD = disease_data$BD)
-        list_data %>%
-            purrr::walk(process_scores_for_disease, 
-                 kernel = kernel, 
-                 drug_protein_matrix = drug_protein_matrix, 
+ 
+            purrr::walk(disease_data,score_genes_for_disease,
+                 kernel = kernel,
                  kernel_name = kernel_name)
     })
-} 
+}
 
 generate_drug_rank = function(disease = c("MDD", "BD")) {
     disease = match.arg(disease)
@@ -178,7 +174,7 @@ load_drug_target_matrix = function() {
   invisible(load_rdata(drug_target_rdata_file_path))
 }
 
-process_scores_for_disease = function(kernel,disease_info,drug_protein_matrix,kernel_name){
+score_genes_for_disease = function(kernel,disease_info,kernel_name){
     generator_gene_score_by_kernel(kernel,kernel_name,disease_info)
 }
 generate_roc_curve_mdd = function(){
