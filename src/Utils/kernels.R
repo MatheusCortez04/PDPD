@@ -288,3 +288,22 @@ generate_drug_kernel_mdd_score = function(){
     save(merge_df, file = output_rdata_file)
     cat("\nRdata score saved to:", output_rdata_file, "\n")
 }
+
+score_genes_for_disease = function(kernel,disease_info,kernel_name){
+    compute_gene_scores_from_kernel(kernel,kernel_name,disease_info)
+}
+compute_gene_scores_from_kernel= function(kernel,kernel_name,disease_info){
+    disease_name = disease_info$name
+    disease_vector = disease_info$vector
+
+    score_vector =  kernel %*% disease_vector$is_disease
+    protein_scores_df = data.frame(
+        entrez_id=  rownames(kernel),
+        gene_score = score_vector
+    )
+    output_dir = here("src","Data","Kernels","Score",disease_name)
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+    output_path_csv = here(output_dir, paste0(kernel_name, ".csv"))
+    write.csv(protein_scores_df, file = output_path_csv, row.names = FALSE)
+    cat("\n✔ Gene Score saved in:", output_path_csv, "\n")
+}
