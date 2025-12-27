@@ -1,30 +1,6 @@
 library(here)
 library(purrr)
 library(readr)
-generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,drug_nodes){
-  cat("\n--- Generating Drug Target Matrix ---\n")
-    output_file_name="drug_target_matrix"
-    drug_dir =here("src","Data","Drug")
-    drug_Rdata_dir =here("src","Data","Drug","RData")
-    create_dir(drug_dir)
-    create_dir(drug_Rdata_dir)
-    
-    output_path_csv = here(drug_dir,paste0(output_file_name, ".csv"))
-    output_path_rdata = here(drug_Rdata_dir,paste0(output_file_name, ".Rdata"))
-
-    matrix_drug_protein = build_drug_protein_matrix(drug_target_df,protein_nodes,drug_nodes)
-
-    write.csv(matrix_drug_protein, file =output_path_csv,row.names=FALSE)
-    cat("Csv file  saved to:", output_path_csv, "\n")
-    Sys.sleep(1)
-    matrix_drug_protein_numeric <- as.matrix(matrix_drug_protein[ , -1])
-    rownames(matrix_drug_protein_numeric) <- matrix_drug_protein$drugbank_id
-    storage.mode(matrix_drug_protein_numeric) <- "numeric"
-
-    save(matrix_drug_protein_numeric, file = output_path_rdata)
-    cat("R object 'drug_target_df' saved to:", output_path_rdata, "\n")
-    Sys.sleep(1)
-}
 
 scoring_drug_disease_menu = function(){
   while(TRUE){
@@ -46,20 +22,11 @@ scoring_drug_disease_menu = function(){
 
 drug_function_mapper = list(
     '1' = function() {
-        cat("\n--- Generating and  Drug  Target Matrix  ---\n")
-        drug_target_df  = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv"), sep=",")
-
-        cat("Drug Target file reading complete.\n")
-        ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
-        cat("PPI  file reading complete.\n")
-
-        protein_nodes = get_ppi_nodes(ppi_df)
-        drug_nodes= get_drug_nodes(drug_target_df)
-        generate_ordered_drug_protein_matrix(drug_target_df,protein_nodes,drug_nodes)
     },
     '2' = function(){
-        generate_drug_rank("MDD")
-        generate_drug_rank("BD")
+        run_drug_scoring()
+        summarise_drug_max_score()
+
     },
     '3'= function(){
         generate_roc_curve_mdd()
@@ -99,80 +66,49 @@ run_drug_scoring = function(){
     })
 }
 
-generate_drug_rank = function(disease = c("MDD", "BD")) {
-    disease = match.arg(disease)
+generate_drug_rank = function() {
+    diseases = c("MDD", "BD")
 
-    cat("[WARN] Building Average Rank to Disease:", disease, "\n")
+for(disease in diseases) {
+    base::cat(base::paste("[WARN] Building Average Rank to Disease:", disease, "\n"))
+    base_dir = here::here("src", "Data", "Drug", "Score", disease)
+    
+    pstep_df = read.csv(here::here(base_dir, "pstep_kernel.csv")) %>%
+        dplyr::mutate(rank_pstep = base::rank(-max_gene_score, ties.method = "average")) %>%
+        dplyr::select(drugbank_id, rank_pstep)
 
-    kernel_names = c(
-        "diffusion_kernel","pstep_kernel","regularised_laplacian_kernel",
-        "commute_time_kernel","inverse_cosine_kernel"
-    )
+    reg_lap_df = read.csv(here::here(base_dir, "regularised_laplacian_kernel.csv")) %>%
+        dplyr::mutate(rank_reg_lap = base::rank(-max_gene_score, ties.method = "average")) %>%
+        dplyr::select(drugbank_id, rank_reg_lap)
 
-    score_base_dir = here("src", "Data", "Drug", "Score", disease)
-    rdata_dir = here(score_base_dir, "RData")
+    inv_cos_df = read.csv(here::here(base_dir, "inverse_cosine_kernel.csv")) %>%
+        dplyr::mutate(rank_inv_cos = base::rank(-max_gene_score, ties.method = "average")) %>%
+        dplyr::select(drugbank_id, rank_inv_cos)
 
-    score_list = kernel_names %>%
-        map(function(kernel){
-            rdata_path = here(score_base_dir, "RData", paste0(kernel, ".Rdata"))
-            if (!file.exists(rdata_path)) {
-                cat("[WARN] Score RData not  found:", rdata_path, "\n")
-                next()
-        }
-            df = load_rdata(rdata_path)
-            df = df %>%
-                mutate(!!kernel := rank(-drug_score,ties.method = "average")) %>%
-                select(drugbank_id, all_of(kernel))
-                return(df)
-        }) %>% compact()
+    commute_df = read.csv(here::here(base_dir, "commute_time_kernel.csv")) %>%
+        dplyr::mutate(rank_commute = base::rank(-max_gene_score, ties.method = "average")) %>%
+        dplyr::select(drugbank_id, rank_commute)
 
+    merge_df = pstep_df %>%
+        dplyr::left_join(reg_lap_df, by = "drugbank_id") %>%
+        dplyr::left_join(inv_cos_df, by = "drugbank_id") %>%
+        dplyr::left_join(commute_df, by = "drugbank_id")
 
+    final_df <- merge_df %>%
+        dplyr::mutate(
+            average_rank = rowMeans(
+                dplyr::select(., dplyr::starts_with("rank_")), 
+                na.rm = TRUE
+            )
+        ) %>%
+        dplyr::arrange(average_rank) %>%
+        dplyr::select(drugbank_id,rank_pstep,rank_reg_lap,rank_inv_cos,rank_commute,average_rank)
 
-    final_rank_df = reduce(score_list, full_join, by = "drugbank_id")
-    final_rank_df = final_rank_df %>%
-        mutate(Mean_Rank = rowMeans(select(., all_of(kernel_names)), na.rm = TRUE)) %>%
-        arrange(Mean_Rank)
-
-    output_csv = here(score_base_dir, "average_kernel_rank.csv")
-    write_csv(final_rank_df, output_csv)
-
-    cat("\n✔ Average Kernel Rank saved in:", output_csv, "\n")
-    Sys.sleep(1.5)
-    return(final_rank_df)
+    write.csv(final_df, here(base_dir,paste0("average_rank_", disease, ".csv")), row.names = FALSE)
 }
 
-build_drug_protein_matrix= function(data_frame,protein_nodes,drug_nodes){
-  data_frame %>%
-    filter(entrez_id %in% protein_nodes) %>%
-    distinct(drugbank_id, entrez_id) %>%
-    #O Value é utilizado para que cada iteração do dataframe original contenha o valor 1
-    # e as demais lacunas sejam preenchidas com zero
-    mutate(
-      drugbank_id = factor(drugbank_id, levels = drug_nodes),
-      entrez_id = factor(entrez_id, levels = protein_nodes),
-      value = 1
-    ) %>%
-    pivot_wider(
-      id_cols = drugbank_id,
-      names_from = entrez_id,
-      values_from = value,
-      values_fill = 0,
-      names_expand = TRUE,
-      id_expand = TRUE
-    ) %>%
-    arrange(drugbank_id)
 }
 
-load_drug_target_matrix = function() {
-    drug_target_rdata_file_path = here("src","Data","Drug","RData","drug_target_matrix.Rdata")
-    drug_protein_file_already_exists = file.exists(drug_target_rdata_file_path)
-    if(!drug_protein_file_already_exists){
-        cat("\n[Error]: Required file Drug target matrix not found.\n This file is necessary to calculate the score. Would you like to create it now\n")
-        Sys.sleep(1.5)
-        return()
-    }
-  invisible(load_rdata(drug_target_rdata_file_path))
-}
 
 score_genes_for_disease = function(kernel,disease_info,kernel_name){
     compute_gene_scores_from_kernel(kernel,kernel_name,disease_info)
@@ -325,7 +261,7 @@ compute_gene_scores_from_kernel= function(kernel,kernel_name,disease_info){
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
     output_path_csv = here(output_dir, paste0(kernel_name, ".csv"))
     write.csv(protein_scores_df, file = output_path_csv, row.names = FALSE)
-
+    cat("\n✔ Gene Score saved in:", output_path_csv, "\n")
 }
 
 
@@ -353,13 +289,12 @@ summarise_drug_max_score = function(){
         for(kernel in kernel_names){
             gene_score_path = here("src","Data","Kernels","Score",disease,paste0(kernel, ".csv"))
             if (!file.exists(gene_score_path)) next
- 
+             cat("\n✔Building Drug rank to Disease:", disease, "and kernel",kernel, "\n")
             gene_score_df = read.csv(gene_score_path)
             drug_target_df= load_drug_target_df()
 
             drug_gene_score_df = gene_score_df %>%
-                dplyr::left_join(drug_target_df,by="entrez_id")
-            drug_gene_score_df =drug_gene_score_df %>%
+                dplyr::left_join(drug_target_df,by="entrez_id")%>%
                 dplyr::group_by(drugbank_id) %>%
                 dplyr::summarise(
                     max_gene_score = max(gene_score, na.rm = TRUE),
@@ -370,6 +305,7 @@ summarise_drug_max_score = function(){
             dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
             out_path = here(out_dir,paste0(kernel, ".csv"))
             write.csv(drug_gene_score_df,out_path,row.names=FALSE)
+                cat("\n✔ Drug Rank of Kernel:",kernel,"Saved in: ",out_path, "\n")
         }
         
     }
