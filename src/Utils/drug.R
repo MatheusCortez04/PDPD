@@ -40,7 +40,7 @@ drug_function_mapper = list(
 run_drug_scoring = function(){
     kernel_names = c(
         "diffusion_kernel","pstep_kernel","regularised_laplacian_kernel",
-        "commute_time_kernel"
+        "commute_time_kernel","inverse_cosine_kernel"
     )
     disease_data = list(
         MDD = list(name = "MDD", vector = build_protein_mdd_df()),
@@ -72,25 +72,24 @@ generate_drug_rank = function() {
         base_dir = here::here("src", "Data", "Drug", "Score", disease)
         
         pstep_df = read.csv(here::here(base_dir, "pstep_kernel.csv")) %>%
-            dplyr::mutate(rank_pstep = base::rank(-max_gene_score, ties.method = "average")) %>%
+            dplyr::mutate(rank_pstep = base::rank(dplyr::desc(max_gene_score), ties.method = "average")) %>%
             dplyr::select(drugbank_id, rank_pstep)
 
         reg_lap_df = read.csv(here::here(base_dir, "regularised_laplacian_kernel.csv")) %>%
-            dplyr::mutate(rank_reg_lap = base::rank(-max_gene_score, ties.method = "average")) %>%
+            dplyr::mutate(rank_reg_lap = base::rank(dplyr::desc(max_gene_score), ties.method = "average")) %>%
             dplyr::select(drugbank_id, rank_reg_lap)
-
-        # inv_cos_df = read.csv(here::here(base_dir, "inverse_cosine_kernel.csv")) %>%
-        #     dplyr::mutate(rank_inv_cos = base::rank(-max_gene_score, ties.method = "average")) %>%
-        #     dplyr::select(drugbank_id, rank_inv_cos)
+        inv_cos_df = read.csv(here::here(base_dir, "inverse_cosine_kernel.csv")) %>%
+           dplyr::mutate(rank_inv_cos = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
+            dplyr::select(drugbank_id, rank_inv_cos)
 
         commute_df = read.csv(here::here(base_dir, "commute_time_kernel.csv")) %>%
-            dplyr::mutate(rank_commute = base::rank(-max_gene_score, ties.method = "average")) %>%
+             dplyr::mutate(rank_commute = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
             dplyr::select(drugbank_id, rank_commute)
 
         merge_df = pstep_df %>%
             dplyr::left_join(reg_lap_df, by = "drugbank_id") %>%
-            dplyr::left_join(commute_df, by = "drugbank_id")
-            # dplyr::left_join(inv_cos_df, by = "drugbank_id") 
+            dplyr::left_join(commute_df, by = "drugbank_id") %>%
+            dplyr::left_join(inv_cos_df, by = "drugbank_id") 
             
 
         final_df <- merge_df %>%
@@ -108,8 +107,6 @@ generate_drug_rank = function() {
 
 }
 
-# COM A VALIDACAO ATUAL NÃO HÁ NENHUMA DROGA APROVADA PARA BIPOLARIDADE
-# O QUE GERA UM PDF VAZIO, VERIFICAR 
 generate_roc_curve_bipolar = function(){
     bipolar_repodb = read_tsv(here("src","Data","REPODB","BIPOLAR_REPODB.tsv"), show_col_types = FALSE)
     bipolar_repodb = bipolar_repodb %>% filter(status=="Approved")
@@ -146,10 +143,6 @@ generate_roc_curve_bipolar = function(){
     Sys.sleep(1.5)
     return(roc_out)
 }
-
-
-
-
 
 summarise_drug_max_score = function(){
     diseases = c("MDD", "BD")
