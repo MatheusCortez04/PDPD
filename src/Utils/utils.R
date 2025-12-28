@@ -76,7 +76,7 @@ build_protein_mdd_df= function(){
   output_file_path_csv = here(output_path,paste0(output_file_name,".csv"))
 
   output_path_rdata =here(output_path,"Rdata")
-  create_dir(output_path_rdata)
+  dir.create(output_path_rdata, recursive = TRUE, showWarnings = FALSE)
   output_file_path_rdata = here(output_path_rdata,paste0(output_file_name,".Rdata"))
   
   write.csv(mdd_vector,file=output_file_path_csv,row.names=FALSE )
@@ -97,7 +97,7 @@ build_protein_bipolar_df= function(){
   output_file_path_csv = here(output_path,paste0(output_file_name,".csv"))
 
   output_path_rdata =here(output_path,"Rdata")
-  create_dir(output_path_rdata)
+  dir.create(output_path_rdata, recursive = TRUE, showWarnings = FALSE)
 
   output_file_path_rdata = here(output_path_rdata,paste0(output_file_name,".Rdata"))
   
