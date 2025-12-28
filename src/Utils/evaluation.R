@@ -37,54 +37,70 @@ evaluation_function_mapper = list(
 
 
 generate_roc_curve_mdd = function(){
-  drug_target_mapping  = load_drug_target_df()
+    output_dir = here("src", "Evaluation","MDD")
+    prediction_mdd_file_path = here(output_dir,"prediction_mdd.csv")
 
-  mdd_gold_standard = read_tsv(here("src","Data","REPODB","MDD_REPODB.tsv"), show_col_types = FALSE)    
+    if(!file.exists(prediction_mdd_file_path)){
+        cat("[WARN] Processed data not found. Running preparation first...\n")
+        prediction_mdd = created_prediction_mdd_data()
+    }
+    else{
+        prediction_mdd = read.csv(prediction_mdd_file_path)
+    }
+ 
+    if (sum(prediction_mdd$validation_label) <= 0) {
+        cat("[WARN] Cannot plot ROC: No hits found in the ranking.\n")
+        return(NULL)
+    }
+   
+    output_roc_dir = here(output_dir,"ROC")
+    dir.create(output_roc_dir, recursive = TRUE, showWarnings = FALSE)
+    output_graph_file_name = "mdd_roc_curve.pdf"
+    grDevices::pdf(here(output_roc_dir,output_graph_file_name), width = 6, height = 6)
+    
+    roc_results = reportROC::reportROC(
+         gold = prediction_mdd$validation_label,
+         predictor = -1 * prediction_mdd$average_rank,
+         plot = TRUE
+     )
+     grDevices::dev.off()
+     message(sprintf("[SUCCESS] ROC curve saved at: %s",here(output_dir, output_graph_file_name)))
+     Sys.sleep(1.5)
+
+}
+
+created_prediction_mdd_data = function(){
+    drug_target_mapping  = load_drug_target_df()
+    mdd_gold_standard = read_tsv(here("src","Data","REPODB","MDD_REPODB.tsv"), show_col_types = FALSE)    
     mdd_gold_standard = mdd_gold_standard %>%  dplyr::semi_join(mdd_gold_standard,drug_target_mapping,by='drugbank_id') %>% 
       filter(status=="Approved")
  
-  cat(sprintf("[INFO] Total valid drugs in RepoDB (Gold Standard): %d\n",nrow(mdd_gold_standard)))
-
-  rank_file_path = here::here("src", "Data", "Drug", "Score", "MDD", "average_rank_MDD.csv")
-
-  if (!file.exists(rank_file_path)) {
+    cat(sprintf("[INFO] Total valid drugs in RepoDB (Gold Standard): %d\n",nrow(mdd_gold_standard)))
+    rank_file_path = here("src", "Data", "Drug", "Score", "MDD", "average_rank_MDD.csv")
+    
+    if (!file.exists(rank_file_path)) {
       stop(base::sprintf("[ERROR] Average rank file not found at: %s", rank_file_path))
     }
-
-    mdd_prediction = read.csv(rank_file_path)
-    
+     mdd_prediction = read.csv(rank_file_path)
     processed_predictions = mdd_prediction %>% 
-        dplyr::mutate(validation_label = ifelse(drugbank_id %in% mdd_gold_standard$drugbank_id, 1, 0))
-    glimpse(processed_predictions)
+        dplyr::mutate(
+            validation_label =  ifelse(drugbank_id %in% mdd_gold_standard$drugbank_id, 1, 0),
+            validation_status = factor(validation_label,
+                                             levels = c(0, 1),
+                                             labels = c("Not validated by RepoDB", "Validated by RepoDB"))
+            )
+
     validated_hits = processed_predictions %>% filter(validation_label==1)
     cat(sprintf("[INFO] Total predicted hits validated: %d\n",nrow(validated_hits)))
-    processed_predictions$validation_label = factor(processed_predictions$validation_label,
-                           levels = c(0,1),
-                           labels = c("Not validated by repODB", "Validated by repODB"))
-
     if (nrow(validated_hits) <= 0) {
          cat("[WARN] ROC curve unavailable: No validated drugs were predicted in the ranking.\n")
          Sys.sleep(1.5)
          return(NULL)
     }
-     output_dir <- here("src", "Evaluation", "ROC", "MDD")
-     output_graph_file_name = "mdd_roc.pdf" 
+    output_dir =  here("src", "Evaluation","MDD")
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+    write.csv(processed_predictions,file=here(output_dir,"prediction_mdd.csv"),row.names=FALSE)
+    message(sprintf("[SUCCESS] prediction file  saved at: %s",here(output_dir,"prediction_mdd.csv")))
 
-     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-
-     write.csv(processed_predictions,file=here(output_dir,"prediction_mdd.csv"),row.names=FALSE)
-
-     grDevices::pdf(here(output_dir,output_graph_file_name), width = 6, height = 6)
-    
-    roc_results = reportROC::reportROC(
-         gold = processed_predictions$validation_label,
-         predictor = -1 * processed_predictions$average_rank,
-         plot = TRUE
-     )
- 
-     grDevices::dev.off()
-     message(sprintf("[SUCCESS] ROC curve saved at: %s",here(output_dir, output_graph_file_name)))
-     Sys.sleep(1.5)
-    
-     return(roc_results)
+    invisible(processed_predictions)
 }
