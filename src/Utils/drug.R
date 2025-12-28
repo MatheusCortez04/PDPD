@@ -110,48 +110,7 @@ generate_drug_rank = function() {
 
 
 
-generate_roc_curve_mdd = function(){
 
-    drug_target_df  = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv"), sep=",")
-    mdd_repodb = read_tsv(here("src","Data","REPODB","MDD_REPODB.tsv"), show_col_types = FALSE)
-     mdd_repodb =  dplyr::semi_join(mdd_repodb,drug_target_df,by='drugbank_id')%>% 
-        filter(status=="Approved")
-        
-    cat("Total de drogas validas pelo RepoDb: ", nrow(mdd_repodb), "\n")
-
-    mdd_rank_file_path = here("src", "Data", "Drug", "Score", "MDD","average_kernel_rank.csv")
-    mdd_average_rank = read.csv(mdd_rank_file_path)
-
-    pred_mdd = mdd_average_rank %>% 
-        mutate(mdd_repodb_validated = ifelse(drugbank_id %in% mdd_repodb$drugbank_id, 1, 0))
-    previstas_validas = pred_mdd %>% filter(mdd_repodb_validated==1)
-    cat("Total de drogas previtas  validas: ", nrow(previstas_validas), "\n")
-
-    pred_mdd$mdd_repodb_validated = factor(pred_mdd$mdd_repodb_validated,
-                          levels = c(0,1),
-                          labels = c("Not validated by repODB", "Validated by repODB"))
-
-    if(nrow(previstas_validas)<=0){
-        cat("Curva ROC indisponivel pois não foi previsto nenhuma droga:\n")
-        Sys.sleep(1.5)
-        return(NULL)
-    }
-    output_dir = here("src", "Relatorios", "ROC", "MDD")
-    output_graph_file_name = "mdd_roc.pdf" 
-    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-    write.csv(pred_mdd,file=here(output_dir,"prediction_mdd.csv"),row.names=FALSE)
-
-    grDevices::pdf(here(output_dir,output_graph_file_name), width = 6, height = 6)
-    roc_out = reportROC::reportROC(gold = pred_mdd$mdd_repodb_validated,
-                                    predictor = -1*pred_mdd$Mean_Rank,
-                                    plot=TRUE
-                                    )
- 
-    grDevices::dev.off()
-    message(sprintf("Salvando Curva ROC em: %s", here(output_dir,output_graph_file_name)))
-    Sys.sleep(1.5)
-    return(roc_out)
-}
 # COM A VALIDACAO ATUAL NÃO HÁ NENHUMA DROGA APROVADA PARA BIPOLARIDADE
 # O QUE GERA UM PDF VAZIO, VERIFICAR 
 generate_roc_curve_bipolar = function(){
@@ -247,19 +206,7 @@ generate_recall_k_MDD = function(){
 }
 
 
-load_drug_target_df = function(){
-    drug_target_file_path = here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv")
-    drug_target_file_already_exists = file.exists(drug_target_file_path)
-    if(!drug_target_file_already_exists){
-        cat("\n[Error]: Required file Drug target file not found.\n This file is necessary to calculate the score. Would you like to create it now\n")
-        Sys.sleep(1.5)
-        return()
-    }
-    drug_target_df = read.csv(drug_target_file_path)
-    drug_target_df %>% dplyr::distinct(drugbank_id, entrez_id) %>%
-        dplyr::mutate(entrez_id = as.character(entrez_id))
-    invisible(drug_target_df)
-}
+
 
 summarise_drug_max_score = function(){
     diseases = c("MDD", "BD")
