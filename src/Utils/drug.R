@@ -2,6 +2,7 @@ library(here)
 library(purrr)
 library(readr)
 source(here("src","Utils","utils.R"))
+
 generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,drug_nodes){
   cat("\n--- Generating Drug Target Matrix ---\n")
     output_file_name="drug_target_matrix"
@@ -33,14 +34,10 @@ scoring_drug_disease_menu = function(){
     cat("--- Drug Menu ---\n\n")
     cat(" [1] Generate Drug Protein Matrix\n")
     cat(" [2] Generate Drug Score \n")
-    cat(" [3] Generate MDD ROC \n")
-    cat(" [4] Generate MDD Recall@K Graph \n")
-    cat(" [5] Generate Bipolar ROC \n")
     cat(" [B] Back\n\n")
 
     input = readline(prompt = "Choice option: ")
     if (toupper(trimws(input)) == "B") break
-
      drug_function_mapper[[input]]()
   }
 }
@@ -62,12 +59,6 @@ drug_function_mapper = list(
         calculate_drug_score()
         generate_drug_rank("MDD")
         generate_drug_rank("BD")
-    },
-    '3'= function(){
-        generate_roc_curve_mdd()
-    },
-    '4'= function(){
-        generate_recall_k_MDD()
     },
     '5'= function(){
         generate_roc_curve_bipolar()
@@ -204,48 +195,7 @@ process_scores_for_disease = function(kernel,disease_info,drug_protein_matrix,ke
     cat(paste("   ✔ Score salvo em:", output_path_csv, "\n"))
     invisible(score_df)
 }
-generate_roc_curve_mdd = function(){
 
-    drug_target_df  = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv"), sep=",")
-    mdd_repodb = read_tsv(here("src","Data","REPODB","MDD_REPODB.tsv"), show_col_types = FALSE)
-     mdd_repodb =  dplyr::semi_join(mdd_repodb,drug_target_df,by='drugbank_id')%>% 
-        filter(status=="Approved")
-        
-    cat("Total de drogas validas pelo RepoDb: ", nrow(mdd_repodb), "\n")
-
-    mdd_rank_file_path = here("src", "Data", "Drug", "Score", "MDD","average_kernel_rank.csv")
-    mdd_average_rank = read.csv(mdd_rank_file_path)
-
-    pred_mdd = mdd_average_rank %>% 
-        mutate(mdd_repodb_validated = ifelse(drugbank_id %in% mdd_repodb$drugbank_id, 1, 0))
-    previstas_validas = pred_mdd %>% filter(mdd_repodb_validated==1)
-    cat("Total de drogas previtas  validas: ", nrow(previstas_validas), "\n")
-
-    pred_mdd$mdd_repodb_validated = factor(pred_mdd$mdd_repodb_validated,
-                          levels = c(0,1),
-                          labels = c("Not validated by repODB", "Validated by repODB"))
-
-    if(nrow(previstas_validas)<=0){
-        cat("Curva ROC indisponivel pois não foi previsto nenhuma droga:\n")
-        Sys.sleep(1.5)
-        return(NULL)
-    }
-    output_dir = here("src", "Relatorios", "ROC", "MDD")
-    output_graph_file_name = "mdd_roc.pdf" 
-    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-    write.csv(pred_mdd,file=here(output_dir,"prediction_mdd.csv"),row.names=FALSE)
-
-    grDevices::pdf(here(output_dir,output_graph_file_name), width = 6, height = 6)
-    roc_out = reportROC::reportROC(gold = pred_mdd$mdd_repodb_validated,
-                                    predictor = -1*pred_mdd$Mean_Rank,
-                                    plot=TRUE
-                                    )
- 
-    grDevices::dev.off()
-    message(sprintf("Salvando Curva ROC em: %s", here(output_dir,output_graph_file_name)))
-    Sys.sleep(1.5)
-    return(roc_out)
-}
 # COM A VALIDACAO ATUAL NÃO HÁ NENHUMA DROGA APROVADA PARA BIPOLARIDADE
 # O QUE GERA UM PDF VAZIO, VERIFICAR 
 generate_roc_curve_bipolar = function(){
@@ -284,58 +234,4 @@ generate_roc_curve_bipolar = function(){
     Sys.sleep(1.5)
     return(roc_out)
 }
-generate_recall_k_MDD = function(){
 
-    pred_mdd_rank_file_path = here("src", "Relatorios", "ROC", "MDD","prediction_mdd.csv")
-
-        if (!file.exists(pred_mdd_rank_file_path)) {
-            cat("[WARN] Drug Score :", pred_mdd_rank_file_path, "\n")
-            next()
-        }
-    pred_mdd_rank = read.csv(pred_mdd_rank_file_path)
-    valid_true <- pred_mdd_rank %>%
-    filter(mdd_repodb_validated == "Validated by repODB") %>%
-    pull(drugbank_id)
-
-    pred_mdd_rank = pred_mdd_rank %>%
-        select(drugbank_id,Mean_Rank)
-
-
-    # Atribui valor 1 a toda droga prevista contida no vetor de drogas validas 
-    valid_prediction = ifelse(pred_mdd_rank$drugbank_id %in% valid_true, 1, 0)
-
-    #cumSum realiza a soma cumulariva e divide pelo total de verdadeiros positivos
-    # recall = VP/VP+FN(neste caso nao tem FN a nao ser que seja inserido um valor de corte no rank)
-    recall_values = cumsum(valid_prediction)/length(valid_true)
-
-    recall_df= data.frame(K = 1:nrow(pred_mdd_rank),
-                        Recall = recall_values)
-
-        recall_df$highlight <- ifelse(recall_df$K %% 50 == 0, TRUE, FALSE)
-        g = ggplot(recall_df, aes(x = K, y = Recall)) +
-        geom_line(size = 1) +
-        geom_point(
-        data = subset(recall_df, highlight == TRUE),
-        size = 3,
-        color = "red"
-        ) +
-    geom_text(
-    data = subset(recall_df, highlight == TRUE),
-    aes(label = paste0("(", K, ", ", round(Recall, 3), ")")),
-    vjust = -0.7,
-    size = 3,
-    check_overlap=TRUE
-    )+
-        labs(
-            title = "Recall@K para MDD",
-            x = "K (Top-K)",
-            y = "Recall"
-        ) +
-        theme_minimal(base_size = 14)
-    print(g)
-
-
-    pdf_path <- here("src", "Relatorios", "ROC", "MDD", "recall_at_k_MDD.pdf")
-    ggsave(pdf_path, plot = g, width = 8, height = 6)
-
-}
