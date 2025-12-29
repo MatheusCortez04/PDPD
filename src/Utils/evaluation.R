@@ -73,7 +73,7 @@ generate_roc_curve_mdd = function(){
 created_prediction_mdd_data = function(){
     drug_target_mapping  = load_drug_target_df()
     mdd_gold_standard = read_tsv(here("src","Data","REPODB","MDD_REPODB.tsv"), show_col_types = FALSE)    
-    mdd_gold_standard = mdd_gold_standard %>%  dplyr::semi_join(mdd_gold_standard,drug_target_mapping,by='drugbank_id') %>% 
+    mdd_gold_standard = mdd_gold_standard %>%  dplyr::semi_join(drug_target_mapping,by='drugbank_id') %>% 
       filter(status=="Approved")
  
     cat(sprintf("[INFO] Total valid drugs in RepoDB (Gold Standard): %d\n",nrow(mdd_gold_standard)))
