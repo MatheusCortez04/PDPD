@@ -100,7 +100,7 @@ generate_drug_rank = function() {
                 )
             ) %>%
             dplyr::arrange(average_rank) %>%
-            dplyr::select(drugbank_id,rank_pstep,rank_reg_lap,rank_commute,average_rank)
+            dplyr::select(drugbank_id,dplyr::starts_with("rank_"),average_rank)
 
         write.csv(final_df, here(base_dir,paste0("average_rank_", disease, ".csv")), row.names = FALSE)
     }
@@ -170,7 +170,7 @@ summarise_drug_max_score = function(){
             dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
             out_path = here(out_dir,paste0(kernel, ".csv"))
             write.csv(drug_gene_score_df,out_path,row.names=FALSE)
-                cat("\n✔ Drug Rank of Kernel:",kernel,"Saved in: ",out_path, "\n")
+            cat("\n✔ Drug Rank of Kernel:",kernel,"Saved in: ",out_path, "\n")
         }
         
     }
