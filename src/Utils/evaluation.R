@@ -176,12 +176,17 @@ generate_roc_to_kernel = function(){
         "commute_time_kernel","inverse_cosine_kernel"
     )
     for(disease in diseases){
-        gold_standard = read_tsv(here("src","Data","REPODB",paste0(disease,"_REPODB.tsv")), show_col_types = FALSE)   
+        gold_standard_file_path = here("src","Data","REPODB",paste0(disease,"_REPODB.tsv"))
+        if (!file.exists(gold_standard_file_path)) {
+            cat("[WARN] Drug Score to kernel:",kernel,"and disease:",disease,"\n")
+            next()
+            }
+        gold_standard = read_tsv(gold_standard_file_path, show_col_types = FALSE)   
         gold_standard = gold_standard %>% filter(status=="Approved")
         for(kernel in kernel_names){
             input_file_path =here(drug_score_dir,disease,paste0(kernel,".csv")) 
             if (!file.exists(input_file_path)) {
-                cat("[WARN] Drug Score to kernel:",kernel,"and disease:",disease,"\n")
+                cat("[WARN] not found gold standard file to disease:",disease,"\n")
                 next()
             }
             drug_score_kernel = read.csv(input_file_path)
