@@ -35,48 +35,7 @@ evaluation_function_mapper = list(
         generate_roc_to_kernel()
     }
 )
-generate_roc_curve_mdd = function(){
 
-    drug_target_df  = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv"), sep=",")
-    mdd_repodb = read_tsv(here("src","Data","REPODB","MDD_REPODB.tsv"), show_col_types = FALSE)
-     mdd_repodb =  dplyr::semi_join(mdd_repodb,drug_target_df,by='drugbank_id')%>% 
-        filter(status=="Approved")
-        
-    cat("Total de drogas validas pelo RepoDb: ", nrow(mdd_repodb), "\n")
-
-    mdd_rank_file_path = here("src", "Data", "Drug", "Score", "MDD","average_kernel_rank.csv")
-    mdd_average_rank = read.csv(mdd_rank_file_path)
-
-    pred_mdd = mdd_average_rank %>% 
-        mutate(mdd_repodb_validated = ifelse(drugbank_id %in% mdd_repodb$drugbank_id, 1, 0))
-    previstas_validas = pred_mdd %>% filter(mdd_repodb_validated==1)
-    cat("Total de drogas previtas  validas: ", nrow(previstas_validas), "\n")
-
-    pred_mdd$mdd_repodb_validated = factor(pred_mdd$mdd_repodb_validated,
-                          levels = c(0,1),
-                          labels = c("Not validated by repODB", "Validated by repODB"))
-
-    if(nrow(previstas_validas)<=0){
-        cat("Curva ROC indisponivel pois não foi previsto nenhuma droga:\n")
-        Sys.sleep(1.5)
-        return(NULL)
-    }
-    output_dir =here("src","Evaluation","MDD")
-    roc_out_dir= here("src","Evaluation","MDD","ROC")
-    output_graph_file_name = "mdd_roc.pdf" 
-    dir.create(roc_out_dir, recursive = TRUE, showWarnings = FALSE)
-    write.csv(pred_mdd,file=here(output_dir,"prediction_mdd.csv"),row.names=FALSE)
-
-    grDevices::pdf(here(roc_out_dir,output_graph_file_name), width = 6, height = 6)
-    roc_out = reportROC::reportROC(gold = pred_mdd$mdd_repodb_validated,
-                                    predictor = -1*pred_mdd$Mean_Rank,
-                                    plot=TRUE
-                                    )
- 
-    grDevices::dev.off()
-    message(sprintf("[SUCCESS] ROC curve saved at: %s",here(roc_out_dir, output_graph_file_name)))
-    Sys.sleep(1.5)
-}
 
 generate_recall_k_MDD = function(){
     prediction_mdd_dir = here("src", "Evaluation","MDD")
@@ -137,62 +96,84 @@ generate_recall_k_MDD = function(){
     Sys.sleep(1.5)
 }
 
-generate_roc_to_kernel = function(){
-    diseases = c("MDD","BD")
-    drug_score_dir =here("src","Data","Drug","Score")
-     
-    
-    kernel_names = c(
-        "diffusion_kernel","pstep_kernel","regularised_laplacian_kernel",
-        "commute_time_kernel","inverse_cosine_kernel"
-    )
-    for(disease in diseases){
-        gold_standard = read_tsv(here("src","Data","REPODB",paste0(disease,"_REPODB.tsv")), show_col_types = FALSE)   
-        gold_standard = gold_standard %>% filter(status=="Approved")
-        for(kernel in kernel_names){
-            input_file_path =here(drug_score_dir,disease,paste0(kernel,".csv")) 
-            if (!file.exists(input_file_path)) {
-                cat("[WARN] Drug Score to kernel:",kernel,"and disease:",disease,"\n")
-                next()
-            }
-            drug_score_kernel = read.csv(input_file_path)
-            gold_standard = gold_standard %>%  dplyr::semi_join(drug_score_kernel,by='drugbank_id')
+generate_roc_curve_mdd = function(){
+    output_dir = here("src", "Evaluation","MDD")
+    prediction_mdd_file_path = here(output_dir,"prediction_mdd.csv")
 
-            kernel_predictions = drug_score_kernel %>% 
-                dplyr::mutate(
-                    validation_label =  ifelse(drugbank_id %in% gold_standard$drugbank_id, 1, 0),
-                    validation_status = factor(validation_label,
+    if(!file.exists(prediction_mdd_file_path)){
+        cat("[WARN] Processed data not found. Running preparation first...\n")
+        prediction_mdd = created_prediction_mdd_data()
+    }
+    else{
+        prediction_mdd = read.csv(prediction_mdd_file_path)
+    }
+ 
+    if (sum(prediction_mdd$validation_label) <= 0) {
+        cat("[WARN] Cannot plot ROC: No hits found in the ranking.\n")
+        return(NULL)
+    }
+   
+    output_roc_dir = here(output_dir,"ROC")
+    dir.create(output_roc_dir, recursive = TRUE, showWarnings = FALSE)
+    output_graph_file_name = "mdd_roc_curve.pdf"
+    grDevices::pdf(here(output_roc_dir,output_graph_file_name), width = 6, height = 6)
+    
+    roc_results = reportROC::reportROC(
+         gold = prediction_mdd$validation_label,
+         predictor = -1 * prediction_mdd$Mean_Rank,
+         plot = TRUE
+     )
+     grDevices::dev.off()
+     message(sprintf("[SUCCESS] ROC curve saved at: %s",here(output_dir, output_graph_file_name)))
+     Sys.sleep(1.5)
+
+}
+
+created_prediction_mdd_data = function(){
+    drug_target_mapping  = load_drug_target_df()
+    mdd_gold_standard_repodb = read_tsv(here("src","Data","REPODB","MDD_REPODB.tsv"), show_col_types = FALSE)    
+    mdd_gold_standard_repodb = mdd_gold_standard_repodb %>%  dplyr::semi_join(drug_target_mapping,by='drugbank_id') %>% 
+      filter(status=="Approved")
+ 
+    cat(sprintf("[INFO] Total valid drugs in RepoDB (Gold Standard): %d\n",nrow(mdd_gold_standard_repodb)))
+
+    mdd_gold_standard_open_targets = read.csv(here("src","Data","REPODB","openTargets_final_mapeado.csv")) %>%
+      dplyr::semi_join(drug_target_mapping, by='drugbank_id')
+
+    drugbank_id_repodb = unique(mdd_gold_standard_repodb$drugbank_id)
+    drugbank_id_op   = unique(mdd_gold_standard_open_targets$drugbank_id) # Aqui está o segredo
+    
+    merge = unique(c(drugbank_id_op, drugbank_id_repodb))
+
+    cat(sprintf("[INFO] Unique drugs in RepoDB: %d\n", length(drugbank_id_repodb)))    
+    cat(sprintf("[INFO] Unique drugs in OpenTargets: %d\n", length(drugbank_id_op)))  
+    cat(sprintf("[INFO] Total unique drugs in MERGE: %d\n", length(merge)))
+    
+    rank_file_path = here("src", "Data", "Drug", "Score", "MDD", "average_kernel_rank.csv")
+    
+    if (!file.exists(rank_file_path)) {
+      stop(base::sprintf("[ERROR] Average rank file not found at: %s", rank_file_path))
+    }
+     mdd_prediction = read.csv(rank_file_path)
+    processed_predictions = mdd_prediction %>% 
+        dplyr::mutate(
+            validation_label =  ifelse(drugbank_id %in% merge, 1, 0),
+            validation_status = factor(validation_label,
                                              levels = c(0, 1),
-                                             labels = c("Not validated by RepoDB", "Validated by RepoDB"))
+                                             labels = c("Not validated", "Validated by Gold Standard"))
             )
 
-                validated_hits = kernel_predictions %>% filter(validation_label==1)
-                cat(sprintf("[INFO] Total predicted hits validated: %d\n",nrow(validated_hits)))
-                if (nrow(validated_hits) <= 0) {
-                    cat("[WARN] ROC curve unavailable: No validated drugs were predicted in the ranking.\n")
-                    Sys.sleep(1.5)
-                    return(NULL)
-                }
-                output_roc_dir = here("src","Evaluation",disease,"ROC","KERNEL")
-                output_graph_file_name = paste0(kernel,"_roc_curve.pdf")
-                dir.create(output_roc_dir, recursive = TRUE, showWarnings = FALSE)
-
-                grDevices::pdf(here(output_roc_dir,output_graph_file_name), width = 6, height = 6)
-                roc_results = reportROC::reportROC(
-                    gold = kernel_predictions$validation_label,
-                    predictor =kernel_predictions$drug_score,
-                    plot = TRUE)
-
-                
-                grDevices::dev.off()
-                message(sprintf("[SUCCESS] ROC curve saved at: %s",here(output_roc_dir, output_graph_file_name)))
-                Sys.sleep(1.5)
-
-
-
-        }
+    validated_hits = processed_predictions %>% filter(validation_label==1)
+    cat(sprintf("[INFO] Total predicted hits validated: %d\n",nrow(validated_hits)))
+    if (nrow(validated_hits) <= 0) {
+         cat("[WARN] ROC curve unavailable: No validated drugs were predicted in the ranking.\n")
+         Sys.sleep(1.5)
+         return(NULL)
     }
+    output_dir =  here("src", "Evaluation","MDD")
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+    write.csv(processed_predictions,file=here(output_dir,"prediction_mdd.csv"),row.names=FALSE)
+    message(sprintf("[SUCCESS] prediction file  saved at: %s",here(output_dir,"prediction_mdd.csv")))
 
-
-
+    invisible(processed_predictions)
 }
