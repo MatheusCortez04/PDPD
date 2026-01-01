@@ -38,62 +38,58 @@ evaluation_function_mapper = list(
 
 
 generate_recall_k_MDD = function(){
-    prediction_mdd_dir = here("src", "Evaluation","MDD")
-    prediction_mdd_file_name ="prediction_mdd.csv"
-    pred_mdd_rank_file_path = here(prediction_mdd_dir,prediction_mdd_file_name)
-        if (!file.exists(pred_mdd_rank_file_path)) {
-            cat("[WARN] Drug Score :", pred_mdd_rank_file_path, "\n")
-            next()
-        }
-    pred_mdd_rank = read.csv(pred_mdd_rank_file_path)
-    valid_true <- pred_mdd_rank %>%
-    filter(mdd_repodb_validated == "Validated by repODB") %>%
-    pull(drugbank_id)
+    output_dir = here("src", "Evaluation","MDD")
+    prediction_mdd_file_path = here(output_dir,"prediction_mdd.csv")
 
-    pred_mdd_rank = pred_mdd_rank %>%
-        select(drugbank_id,Mean_Rank)
+    if(!file.exists(prediction_mdd_file_path)){
+        cat("[WARN] Processed data not found. Running preparation first...\n")
+        prediction_data = created_prediction_mdd_data()
+    }
+    else{
+        prediction_data = read.csv(prediction_mdd_file_path) 
+    }
 
+    total_hits_count = sum(prediction_data$validation_label)
+    if (total_hits_count == 0) {
+        cat("[WARN] No hits found for recall calculation.\n")
+        return(NULL)
+    }
+    recall_values = cumsum(prediction_data$validation_label) / total_hits_count
 
-    # Atribui valor 1 a toda droga prevista contida no vetor de drogas validas 
-    valid_prediction = ifelse(pred_mdd_rank$drugbank_id %in% valid_true, 1, 0)
+    # #cumSum realiza a soma cumulariva e divide pelo total de verdadeiros positivos
+    # # recall = VP/VP+FN(neste caso nao tem FN a nao ser que seja inserido um valor de corte no rank)
 
-    #cumSum realiza a soma cumulariva e divide pelo total de verdadeiros positivos
-    # recall = VP/VP+FN(neste caso nao tem FN a nao ser que seja inserido um valor de corte no rank)
-    recall_values = cumsum(valid_prediction)/length(valid_true)
+    recall_df = data.frame(
+        K = 1:nrow(prediction_data),
+        Recall = recall_values
+    )
 
-    recall_df= data.frame(K = 1:nrow(pred_mdd_rank),
-                        Recall = recall_values)
-
-        recall_df$highlight <- ifelse(recall_df$K %% 50 == 0, TRUE, FALSE)
+    recall_df$highlight <- ifelse(recall_df$K %% 50 == 0, TRUE, FALSE)
         g = ggplot(recall_df, aes(x = K, y = Recall)) +
         geom_line(size = 1) +
         geom_point(
-        data = subset(recall_df, highlight == TRUE),
-        size = 3,
-        color = "red"
-        ) +
+            data = subset(recall_df, highlight == TRUE),
+            size = 3,
+            color = "red") +
     geom_text(
-    data = subset(recall_df, highlight == TRUE),
-    aes(label = paste0("(", K, ", ", round(Recall, 3), ")")),
-    vjust = -0.7,
-    size = 3,
-    check_overlap=TRUE
+        data = subset(recall_df, highlight == TRUE),
+        aes(label = paste0("(", K, ", ", round(Recall, 3), ")")),
+        vjust = -0.7,
+        size = 3,
+        check_overlap=TRUE
     )+
-        labs(
-            title = "Recall@K para MDD",
-            x = "K (Top-K)",
-            y = "Recall"
-        ) +
-        theme_minimal(base_size = 14)
+    labs(
+        title = "Recall@K para MDD",
+        x = "K (Top-K)",
+        y = "Recall") +
+    theme_minimal(base_size = 14)
     print(g)
 
-    recall_path_dir = here(prediction_mdd_dir,"RECALL")
-    pdf_path <- here(recall_path_dir,"recall_at_k_MDD.pdf")
-    dir.create(recall_path_dir, recursive = TRUE, showWarnings = FALSE)
+    output_recall_dir= here(output_dir,"Recall")
+    dir.create(output_recall_dir, recursive = TRUE, showWarnings = FALSE)
+    pdf_path = here(output_recall_dir,"recall_at_k_MDD.pdf")
     ggsave(pdf_path, plot = g, width = 8, height = 6)
 
-    message(sprintf("[SUCCESS] Recall graph saved at: %s",here(pdf_path)))
-    Sys.sleep(1.5)
 }
 
 generate_roc_curve_mdd = function(){
@@ -207,7 +203,6 @@ created_prediction_bipolar_data = function(){
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
     write.csv(processed_predictions,file=here(output_dir,"prediction_bipolar.csv"),row.names=FALSE)
     message(sprintf("[SUCCESS] prediction file  saved at: %s",here(output_dir,"prediction_bipolar.csv")))
-
     invisible(processed_predictions)
 }
 
@@ -215,39 +210,35 @@ created_prediction_bipolar_data = function(){
 # COM A VALIDACAO ATUAL NÃO HÁ NENHUMA DROGA APROVADA PARA BIPOLARIDADE
 # O QUE GERA UM PDF VAZIO, VERIFICAR 
 generate_roc_curve_bipolar = function(){
-    bipolar_repodb = read_tsv(here("src","Data","REPODB","BIPOLAR_REPODB.tsv"), show_col_types = FALSE)
-    bipolar_repodb = bipolar_repodb %>% filter(status=="Approved")
-    cat("Total de drogas valida pelo RepoDb: ", nrow(bipolar_repodb), "\n")
-    bipolar_rank_file_path = here("src", "Data", "Drug", "Score", "BD","average_kernel_rank.csv")
-    bipolar_average_rank = read.csv(bipolar_rank_file_path)
+    output_dir = here("src", "Evaluation","BD")
+    prediction_bipolar_file_path = here(output_dir,"prediction_bipolar.csv")
 
-    pred_bipolar = bipolar_average_rank %>% 
-        mutate(bipolar_repodb_validated = ifelse(drugbank_id %in% bipolar_repodb$drugbank_id, 1, 0))
-
-    previstas_validas = pred_bipolar %>% filter(bipolar_repodb_validated==1)
-    cat("Total de drogas previtas  validas: ", nrow(previstas_validas), "\n")
-    pred_bipolar$bipolar_repodb_validated = factor(pred_bipolar$bipolar_repodb_validated,
-                          levels = c(0,1),
-                          labels = c("Not validated by repODB", "Validated by repODB"))
-
-    if(nrow(previstas_validas)<=0){
-        cat("Curva ROC indisponivel pois não foi previsto nenhuma droga:\n")
-        Sys.sleep(1.5)
+    if(!file.exists(prediction_bipolar_file_path)){
+        cat("[WARN] Processed data not found. Running preparation first...\n")
+        prediction_bipolar = created_prediction_bipolar_data()
+    }
+    else{
+        prediction_bipolar = read.csv(prediction_bipolar_file_path)
+    }
+ 
+    if (sum(prediction_bipolar$validation_label) <= 0) {
+        cat("[WARN] Cannot plot ROC: No hits found in the ranking.\n")
         return(NULL)
     }
-    output_pdf_path = here("src", "Relatorios", "ROC", "bipolar_average_rank.pdf")
-    table(pred_bipolar$bipolar_repodb_validated)
-    dir.create(dirname(output_pdf_path), recursive = TRUE, showWarnings = FALSE)
-    grDevices::pdf(output_pdf_path, width = 6, height = 6)
-    roc_out = reportROC::reportROC(gold = pred_bipolar$bipolar_repodb_validated,
-                predictor = -1*pred_bipolar$Mean_Rank,
-                plot=FALSE)
+   
+    output_roc_dir = here(output_dir,"ROC")
+    dir.create(output_roc_dir, recursive = TRUE, showWarnings = FALSE)
+    output_graph_file_name = "bipolar_roc_curve.pdf"
+    grDevices::pdf(here(output_roc_dir,output_graph_file_name), width = 6, height = 6)
     
-    write.csv(pred_bipolar,file=here(output_dir,"prediction_bipolar.csv"),row.names=FALSE)
-    plot(roc_out)
+    roc_results = reportROC::reportROC(
+         gold = prediction_bipolar$validation_label,
+         predictor = -1 * prediction_bipolar$Mean_Rank,
+         plot = TRUE
+     )
     grDevices::dev.off()
-    message(sprintf("Salvando Curva ROC em: %s", output_pdf_path))
+     message(sprintf("[SUCCESS] ROC curve saved at: %s",here(output_dir, output_graph_file_name)))
     Sys.sleep(1.5)
-    return(roc_out)
+
 }
 
