@@ -169,3 +169,85 @@ created_prediction_mdd_data = function(){
 
     invisible(processed_predictions)
 }
+
+created_prediction_bipolar_data = function(){
+    drug_target_mapping  = load_drug_target_df()
+    bipolar_gold_standard_repodb = read_tsv(here("src","Data","REPODB","BIPOLAR_REPODB.tsv"), show_col_types = FALSE)    
+    bipolar_gold_standard_repodb = bipolar_gold_standard_repodb %>%  dplyr::semi_join(drug_target_mapping,by='drugbank_id') %>% 
+      filter(status=="Approved")
+ 
+    cat(sprintf("[INFO] Total valid drugs in RepoDB (Gold Standard): %d\n",nrow(bipolar_gold_standard_repodb)))
+
+    drugbank_id_repodb = unique(bipolar_gold_standard_repodb$drugbank_id)
+
+    cat(sprintf("[INFO] Unique drugs in RepoDB: %d\n", length(drugbank_id_repodb)))    
+    
+    rank_file_path = here("src", "Data", "Drug", "Score", "BD", "average_kernel_rank.csv")
+    
+    if (!file.exists(rank_file_path)) {
+      stop(base::sprintf("[ERROR] Average rank file not found at: %s", rank_file_path))
+    }
+    bipolar_prediction = read.csv(rank_file_path)
+    processed_predictions = bipolar_prediction %>% 
+        dplyr::mutate(
+            validation_label =  ifelse(drugbank_id %in% drugbank_id_repodb, 1, 0),
+            validation_status = factor(validation_label,
+                                             levels = c(0, 1),
+                                             labels = c("Not validated", "Validated by Gold Standard"))
+            )
+
+    validated_hits = processed_predictions %>% filter(validation_label==1)
+    cat(sprintf("[INFO] Total predicted hits validated: %d\n",nrow(validated_hits)))
+    if (nrow(validated_hits) <= 0) {
+         cat("[WARN] ROC curve unavailable: No validated drugs were predicted in the ranking.\n")
+         Sys.sleep(1.5)
+         return(NULL)
+    }
+    output_dir =  here("src", "Evaluation","BD")
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+    write.csv(processed_predictions,file=here(output_dir,"prediction_bipolar.csv"),row.names=FALSE)
+    message(sprintf("[SUCCESS] prediction file  saved at: %s",here(output_dir,"prediction_bipolar.csv")))
+
+    invisible(processed_predictions)
+}
+
+
+# COM A VALIDACAO ATUAL NÃO HÁ NENHUMA DROGA APROVADA PARA BIPOLARIDADE
+# O QUE GERA UM PDF VAZIO, VERIFICAR 
+generate_roc_curve_bipolar = function(){
+    bipolar_repodb = read_tsv(here("src","Data","REPODB","BIPOLAR_REPODB.tsv"), show_col_types = FALSE)
+    bipolar_repodb = bipolar_repodb %>% filter(status=="Approved")
+    cat("Total de drogas valida pelo RepoDb: ", nrow(bipolar_repodb), "\n")
+    bipolar_rank_file_path = here("src", "Data", "Drug", "Score", "BD","average_kernel_rank.csv")
+    bipolar_average_rank = read.csv(bipolar_rank_file_path)
+
+    pred_bipolar = bipolar_average_rank %>% 
+        mutate(bipolar_repodb_validated = ifelse(drugbank_id %in% bipolar_repodb$drugbank_id, 1, 0))
+
+    previstas_validas = pred_bipolar %>% filter(bipolar_repodb_validated==1)
+    cat("Total de drogas previtas  validas: ", nrow(previstas_validas), "\n")
+    pred_bipolar$bipolar_repodb_validated = factor(pred_bipolar$bipolar_repodb_validated,
+                          levels = c(0,1),
+                          labels = c("Not validated by repODB", "Validated by repODB"))
+
+    if(nrow(previstas_validas)<=0){
+        cat("Curva ROC indisponivel pois não foi previsto nenhuma droga:\n")
+        Sys.sleep(1.5)
+        return(NULL)
+    }
+    output_pdf_path = here("src", "Relatorios", "ROC", "bipolar_average_rank.pdf")
+    table(pred_bipolar$bipolar_repodb_validated)
+    dir.create(dirname(output_pdf_path), recursive = TRUE, showWarnings = FALSE)
+    grDevices::pdf(output_pdf_path, width = 6, height = 6)
+    roc_out = reportROC::reportROC(gold = pred_bipolar$bipolar_repodb_validated,
+                predictor = -1*pred_bipolar$Mean_Rank,
+                plot=FALSE)
+    
+    write.csv(pred_bipolar,file=here(output_dir,"prediction_bipolar.csv"),row.names=FALSE)
+    plot(roc_out)
+    grDevices::dev.off()
+    message(sprintf("Salvando Curva ROC em: %s", output_pdf_path))
+    Sys.sleep(1.5)
+    return(roc_out)
+}
+
