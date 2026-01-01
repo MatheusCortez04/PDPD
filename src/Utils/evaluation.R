@@ -137,17 +137,9 @@ created_prediction_mdd_data = function(){
  
     cat(sprintf("[INFO] Total valid drugs in RepoDB (Gold Standard): %d\n",nrow(mdd_gold_standard_repodb)))
 
-    mdd_gold_standard_open_targets = read.csv(here("src","Data","REPODB","openTargets_final_mapeado.csv")) %>%
-      dplyr::semi_join(drug_target_mapping, by='drugbank_id')
-
     drugbank_id_repodb = unique(mdd_gold_standard_repodb$drugbank_id)
-    drugbank_id_op   = unique(mdd_gold_standard_open_targets$drugbank_id) # Aqui está o segredo
-    
-    merge = unique(c(drugbank_id_op, drugbank_id_repodb))
 
     cat(sprintf("[INFO] Unique drugs in RepoDB: %d\n", length(drugbank_id_repodb)))    
-    cat(sprintf("[INFO] Unique drugs in OpenTargets: %d\n", length(drugbank_id_op)))  
-    cat(sprintf("[INFO] Total unique drugs in MERGE: %d\n", length(merge)))
     
     rank_file_path = here("src", "Data", "Drug", "Score", "MDD", "average_kernel_rank.csv")
     
@@ -157,7 +149,7 @@ created_prediction_mdd_data = function(){
      mdd_prediction = read.csv(rank_file_path)
     processed_predictions = mdd_prediction %>% 
         dplyr::mutate(
-            validation_label =  ifelse(drugbank_id %in% merge, 1, 0),
+            validation_label =  ifelse(drugbank_id %in% drugbank_id_repodb, 1, 0),
             validation_status = factor(validation_label,
                                              levels = c(0, 1),
                                              labels = c("Not validated", "Validated by Gold Standard"))
