@@ -168,7 +168,7 @@ created_prediction_mdd_data = function(){
 
 created_prediction_bipolar_data = function(){
     drug_target_mapping  = load_drug_target_df()
-    bipolar_gold_standard_repodb = read_tsv(here("src","Data","REPODB","BIPOLAR_REPODB.tsv"), show_col_types = FALSE)    
+    bipolar_gold_standard_repodb = read_tsv(here("src","Data","REPODB","BD_REPODB.tsv"), show_col_types = FALSE)    
     bipolar_gold_standard_repodb = bipolar_gold_standard_repodb %>%  dplyr::semi_join(drug_target_mapping,by='drugbank_id') %>% 
       filter(status=="Approved")
  
@@ -242,3 +242,64 @@ generate_roc_curve_bipolar = function(){
 
 }
 
+generate_roc_to_kernel = function(){
+    diseases = c("MDD","BD")
+    drug_score_dir =here("src","Data","Drug","Score")
+     
+    
+    kernel_names = c(
+        "diffusion_kernel","pstep_kernel","regularised_laplacian_kernel",
+        "commute_time_kernel","inverse_cosine_kernel"
+    )
+    for(disease in diseases){
+        for(kernel in kernel_names){
+            gold_standard_file_path = here("src","Data","REPODB",paste0(disease,"_REPODB.tsv"))
+            if (!file.exists(gold_standard_file_path)) {
+                cat("[WARN] Drug Score to kernel:",kernel,"and disease:",disease,"\n")
+                next()
+            }
+            gold_standard = read_tsv(gold_standard_file_path, show_col_types = FALSE)   
+            drug_target_mapping  = load_drug_target_df()
+
+            gold_standard = gold_standard %>% filter(status=="Approved") %>%
+                dplyr::semi_join(drug_target_mapping,by='drugbank_id')
+                input_file_path =here(drug_score_dir,disease,paste0(kernel,".csv")) 
+                if (!file.exists(input_file_path)) {
+                    cat("[WARN] not found gold standard file to disease:",disease,"\n")
+                    next()
+                }
+                drug_score_kernel = read.csv(input_file_path)
+
+                kernel_predictions = drug_score_kernel %>% 
+                    dplyr::mutate(
+                        validation_label =  ifelse(drugbank_id %in% gold_standard$drugbank_id, 1, 0),
+                        validation_status = factor(validation_label,
+                                             levels = c(0, 1),
+                                             labels = c("Not validated by RepoDB", "Validated by RepoDB"))
+            )
+
+
+                validated_hits = kernel_predictions %>% filter(validation_label==1)
+                cat(sprintf("[INFO] Total predicted hits validated: %d\n",nrow(validated_hits)))
+                if (nrow(validated_hits) <= 0) {
+                    cat("[WARN] ROC curve unavailable to disease: ",disease,"\nNo validated drugs were predicted in the ranking.\n")
+                    Sys.sleep(1.5)
+                    return(NULL)
+                }
+                output_roc_dir = here("src","Evaluation",disease,"ROC","KERNEL")
+                output_graph_file_name = paste0(kernel,"_roc_curve.pdf")
+                dir.create(output_roc_dir, recursive = TRUE, showWarnings = FALSE)
+
+                grDevices::pdf(here(output_roc_dir,output_graph_file_name), width = 6, height = 6)
+                roc_results = reportROC::reportROC(
+                    gold = kernel_predictions$validation_label,
+                    predictor =kernel_predictions$drug_score,
+                    plot = TRUE)
+
+                
+                grDevices::dev.off()
+                message(sprintf("[SUCCESS] ROC curve saved at: %s",here(output_roc_dir, output_graph_file_name)))
+                Sys.sleep(1.5)
+        }
+    }
+}
