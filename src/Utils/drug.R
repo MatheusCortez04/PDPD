@@ -235,3 +235,16 @@ generate_roc_curve_bipolar = function(){
     return(roc_out)
 }
 
+load_drug_target_df = function(){
+    drug_target_file_path = here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv")
+    drug_target_file_already_exists = file.exists(drug_target_file_path)
+    if(!drug_target_file_already_exists){
+        cat("\n[Error]: Required file Drug target file not found.\n This file is necessary to calculate the score. Would you like to create it now\n")
+        Sys.sleep(1.5)
+        return()
+    }
+    drug_target_df = read.csv(drug_target_file_path)
+    drug_target_df %>% dplyr::distinct(drugbank_id, entrez_id) %>%
+        dplyr::mutate(entrez_id = as.character(entrez_id))
+    invisible(drug_target_df)
+}
