@@ -1,13 +1,11 @@
-
+source(here("src","Utils","drug.R"))
 evaluation_menu = function(){
   while(TRUE){
     clear_console()
     cat("--- Evaluation Menu ---\n\n")
     cat(" [1] Generate MDD ROC \n")
     cat(" [2] Generate MDD Recall@K \n")
-    cat(" [3] Generate Bipolar ROC \n")
-    cat(" [4] Generate Bipolar Recall@K \n")
-    cat(" [5] Generate Kernel Roc \n")
+    cat(" [3] Generate Kernel Roc \n")
     cat(" [B] Back\n\n")
 
     input = readline(prompt = "Choice option: ")
@@ -26,12 +24,6 @@ evaluation_function_mapper = list(
          generate_recall_k_MDD()
     },
     '3'= function(){
-       generate_roc_curve_bipolar()
-    },
-    '4'= function(){
-        generate_recall_k_bipolar()
-    },
-    '5' = function(){
         generate_roc_to_kernel()
     }
 )
@@ -83,7 +75,6 @@ generate_recall_k_MDD = function(){
         x = "K (Top-K)",
         y = "Recall") +
     theme_minimal(base_size = 14)
-    print(g)
 
     output_recall_dir= here(output_dir,"Recall")
     dir.create(output_recall_dir, recursive = TRUE, showWarnings = FALSE)
@@ -137,7 +128,10 @@ created_prediction_mdd_data = function(){
     rank_file_path = here("src", "Data", "Drug", "Score", "MDD", "average_kernel_rank.csv")
     
     if (!file.exists(rank_file_path)) {
-      stop(base::sprintf("[ERROR] Average rank file not found at: %s", rank_file_path))
+      cat("[WARN] Average Rank file not found. Building first...\n")
+      drug_function_mapper[['1']]()
+      drug_function_mapper[['2']]()
+
     }
      mdd_prediction = read.csv(rank_file_path)
     processed_predictions = mdd_prediction %>% 
