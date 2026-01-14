@@ -7,9 +7,6 @@ scoring_drug_disease_menu = function(){
     clear_console()
     cat("--- Drug Menu ---\n\n")
     cat(" [1] Generate Drug Score\n")
-    cat(" [2] Generate MDD ROC \n")
-    cat(" [3] Generate MDD Recall@K Graph \n")
-    cat(" [4] Generate Bipolar ROC \n")
     cat(" [B] Back\n\n")
 
     input = readline(prompt = "Choice option: ")
@@ -24,16 +21,6 @@ drug_function_mapper = list(
         run_drug_scoring()
         summarise_drug_max_score()
         generate_drug_rank()
-    },
-    '2' = function(){
-        generate_roc_curve_mdd()
-
-    },
-    '3'= function(){
-        generate_recall_k_MDD()
-    },
-    '4'= function(){
-        generate_roc_curve_bipolar()
     }
 )
 
@@ -86,10 +73,15 @@ generate_drug_rank = function() {
              dplyr::mutate(rank_commute = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
             dplyr::select(drugbank_id, rank_commute)
 
+        diffusion_df = read.csv(here::here(base_dir, "diffusion_kernel.csv")) %>%
+             dplyr::mutate(rank_diffusion = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
+            dplyr::select(drugbank_id, rank_diffusion)
+
         merge_df = pstep_df %>%
             dplyr::left_join(reg_lap_df, by = "drugbank_id") %>%
             dplyr::left_join(commute_df, by = "drugbank_id") %>%
-            dplyr::left_join(inv_cos_df, by = "drugbank_id") 
+            dplyr::left_join(inv_cos_df, by = "drugbank_id") %>%
+            dplyr::left_join(diffusion_df, by = "drugbank_id") 
             
 
         final_df <- merge_df %>%
@@ -105,43 +97,6 @@ generate_drug_rank = function() {
         write.csv(final_df, here(base_dir,paste0("average_rank_", disease, ".csv")), row.names = FALSE)
     }
 
-}
-
-generate_roc_curve_bipolar = function(){
-    bipolar_repodb = read_tsv(here("src","Data","REPODB","BIPOLAR_REPODB.tsv"), show_col_types = FALSE)
-    bipolar_repodb = bipolar_repodb %>% filter(status=="Approved")
-    cat("Total de drogas valida pelo RepoDb: ", nrow(bipolar_repodb), "\n")
-    bipolar_rank_file_path = here("src", "Data", "Drug", "Score", "BD","average_kernel_rank.csv")
-    bipolar_average_rank = read.csv(bipolar_rank_file_path)
-
-    pred_bipolar = bipolar_average_rank %>% 
-        mutate(bipolar_repodb_validated = ifelse(drugbank_id %in% bipolar_repodb$drugbank_id, 1, 0))
-
-    previstas_validas = pred_bipolar %>% filter(bipolar_repodb_validated==1)
-    cat("Total de drogas previtas  validas: ", nrow(previstas_validas), "\n")
-    pred_bipolar$bipolar_repodb_validated = factor(pred_bipolar$bipolar_repodb_validated,
-                          levels = c(0,1),
-                          labels = c("Not validated by repODB", "Validated by repODB"))
-
-    if(nrow(previstas_validas)<=0){
-        cat("Curva ROC indisponivel pois não foi previsto nenhuma droga:\n")
-        Sys.sleep(1.5)
-        return(NULL)
-    }
-    output_pdf_path = here("src", "Relatorios", "ROC", "bipolar_average_rank.pdf")
-    table(pred_bipolar$bipolar_repodb_validated)
-    dir.create(dirname(output_pdf_path), recursive = TRUE, showWarnings = FALSE)
-    grDevices::pdf(output_pdf_path, width = 6, height = 6)
-    roc_out = reportROC::reportROC(gold = pred_bipolar$bipolar_repodb_validated,
-                predictor = -1*pred_bipolar$Mean_Rank,
-                plot=FALSE)
-    
-    write.csv(pred_bipolar,file=here(output_dir,"prediction_bipolar.csv"),row.names=FALSE)
-    plot(roc_out)
-    grDevices::dev.off()
-    message(sprintf("Salvando Curva ROC em: %s", output_pdf_path))
-    Sys.sleep(1.5)
-    return(roc_out)
 }
 
 summarise_drug_max_score = function(){

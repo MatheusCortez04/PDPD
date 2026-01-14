@@ -156,7 +156,6 @@ generate_recall_k_MDD = function(){
         x = "K (Top-K)",
         y = "Recall") +
     theme_minimal(base_size = 14)
-    print(g)
 
     output_recall_dir= here(output_dir,"Recall")
     dir.create(output_recall_dir, recursive = TRUE, showWarnings = FALSE)
