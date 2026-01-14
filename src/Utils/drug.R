@@ -86,10 +86,15 @@ generate_drug_rank = function() {
              dplyr::mutate(rank_commute = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
             dplyr::select(drugbank_id, rank_commute)
 
+        diffusion_df = read.csv(here::here(base_dir, "diffusion_kernel.csv")) %>%
+             dplyr::mutate(rank_diffusion = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
+            dplyr::select(drugbank_id, rank_diffusion)
+
         merge_df = pstep_df %>%
             dplyr::left_join(reg_lap_df, by = "drugbank_id") %>%
             dplyr::left_join(commute_df, by = "drugbank_id") %>%
-            dplyr::left_join(inv_cos_df, by = "drugbank_id") 
+            dplyr::left_join(inv_cos_df, by = "drugbank_id") %>%
+            dplyr::left_join(diffusion_df, by = "drugbank_id") 
             
 
         final_df <- merge_df %>%
