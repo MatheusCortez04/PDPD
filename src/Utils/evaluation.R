@@ -9,9 +9,7 @@ evaluation_menu = function(){
     cat("--- Evaluation Menu ---\n\n")
     cat(" [1] Generate MDD ROC \n")
     cat(" [2] Generate MDD Recall@K \n")
-    cat(" [3] Generate Bipolar ROC \n")
-    cat(" [4] Generate Bipolar Recall@K \n")
-    cat(" [5] Generate Kernel Roc \n")
+    cat(" [3] Generate Kernel Roc \n")
     cat(" [B] Back\n\n")
 
     input = readline(prompt = "Choice option: ")
@@ -30,13 +28,7 @@ evaluation_function_mapper = list(
          generate_recall_k_MDD()
     },
     '3'= function(){
-       generate_roc_curve_bipolar()
-    },
-    '4'= function(){
-        generate_recall_k_bipolar()
-    },
-    '5' = function(){
-        generate_roc_to_kernel()
+       generate_roc_to_kernel()
     }
 )
 
