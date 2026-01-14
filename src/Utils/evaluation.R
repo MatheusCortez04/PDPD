@@ -2,6 +2,7 @@ library(here)
 library(dplyr)
 library(reportROC)
 source(here("src","Utils","utils.R"))
+source(here("src","Utils","drug.R"))
 
 evaluation_menu = function(){
   while(TRUE){
@@ -76,7 +77,9 @@ created_prediction_mdd_data = function(){
     rank_file_path = here("src", "Data", "Drug", "Score", "MDD", "average_rank_MDD.csv")
     
     if (!file.exists(rank_file_path)) {
-      stop(base::sprintf("[ERROR] Average rank file not found at: %s", rank_file_path))
+      cat("[WARN] Average Rank file not found. Building first...\n")
+      drug_function_mapper[['1']]()
+
     }
      mdd_prediction = read.csv(rank_file_path)
     processed_predictions = mdd_prediction %>% 
