@@ -115,6 +115,7 @@ summarise_drug_max_score = function(){
 
             drug_gene_score_df = gene_score_df %>%
                 dplyr::left_join(drug_target_df,by="entrez_id")%>%
+                dplyr::filter(!is.na(drugbank_id) & drugbank_id != "") %>%
                 dplyr::group_by(drugbank_id) %>%
                 dplyr::summarise(
                     max_gene_score = max(gene_score, na.rm = TRUE),
