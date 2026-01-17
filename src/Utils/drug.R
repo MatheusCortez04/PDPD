@@ -59,23 +59,23 @@ generate_drug_rank = function() {
         base_dir = here::here("src", "Data", "Drug", "Score", disease)
         
         pstep_df = read.csv(here::here(base_dir, "pstep_kernel.csv")) %>%
-            dplyr::mutate(rank_pstep = base::rank(dplyr::desc(max_gene_score), ties.method = "average")) %>%
-            dplyr::select(drugbank_id, rank_pstep)
+            dplyr::mutate(pstep_kernel = base::rank(dplyr::desc(max_gene_score), ties.method = "average")) %>%
+            dplyr::select(drugbank_id, pstep_kernel)
 
         reg_lap_df = read.csv(here::here(base_dir, "regularised_laplacian_kernel.csv")) %>%
-            dplyr::mutate(rank_reg_lap = base::rank(dplyr::desc(max_gene_score), ties.method = "average")) %>%
-            dplyr::select(drugbank_id, rank_reg_lap)
+            dplyr::mutate(regularised_laplacian_kernel = base::rank(dplyr::desc(max_gene_score), ties.method = "average")) %>%
+            dplyr::select(drugbank_id, regularised_laplacian_kernel)
         inv_cos_df = read.csv(here::here(base_dir, "inverse_cosine_kernel.csv")) %>%
-           dplyr::mutate(rank_inv_cos = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
-            dplyr::select(drugbank_id, rank_inv_cos)
+           dplyr::mutate(inverse_cosine_kernel = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
+            dplyr::select(drugbank_id, inverse_cosine_kernel)
 
         commute_df = read.csv(here::here(base_dir, "commute_time_kernel.csv")) %>%
-             dplyr::mutate(rank_commute = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
-            dplyr::select(drugbank_id, rank_commute)
+             dplyr::mutate(commute_time_kernel = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
+            dplyr::select(drugbank_id, commute_time_kernel)
 
         diffusion_df = read.csv(here::here(base_dir, "diffusion_kernel.csv")) %>%
-             dplyr::mutate(rank_diffusion = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
-            dplyr::select(drugbank_id, rank_diffusion)
+             dplyr::mutate(diffusion_kernel = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
+            dplyr::select(drugbank_id, diffusion_kernel)
 
         merge_df = pstep_df %>%
             dplyr::left_join(reg_lap_df, by = "drugbank_id") %>%
@@ -87,12 +87,12 @@ generate_drug_rank = function() {
         final_df <- merge_df %>%
             dplyr::mutate(
                 average_rank = rowMeans(
-                    dplyr::select(., dplyr::starts_with("rank_")), 
+                    dplyr::select(., dplyr::ends_with("_kernel")), 
                     na.rm = TRUE
                 )
             ) %>%
             dplyr::arrange(average_rank) %>%
-            dplyr::select(drugbank_id,dplyr::starts_with("rank_"),average_rank)
+            dplyr::select(drugbank_id,dplyr::ends_with("_kernel"),average_rank)
 
         write.csv(final_df, here(base_dir,paste0("average_rank_", disease, ".csv")), row.names = FALSE)
     }
