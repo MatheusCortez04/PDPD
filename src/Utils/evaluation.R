@@ -109,7 +109,7 @@ generate_roc_curve_mdd = function(){
     
     roc_results = reportROC::reportROC(
          gold = prediction_mdd$validation_label,
-         predictor = -1 * prediction_mdd$Mean_Rank,
+         predictor = -1 * prediction_mdd$average_rank,
          plot = TRUE
      )
      grDevices::dev.off()

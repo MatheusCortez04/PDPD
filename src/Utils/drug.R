@@ -124,8 +124,8 @@ generate_drug_rank = function(disease = c("MDD", "BD")) {
 
     final_rank_df = reduce(score_list, full_join, by = "drugbank_id")
     final_rank_df = final_rank_df %>%
-        mutate(Mean_Rank = rowMeans(select(., all_of(kernel_names)), na.rm = TRUE)) %>%
-        arrange(Mean_Rank)
+        mutate(average_rank = rowMeans(select(., all_of(kernel_names)), na.rm = TRUE)) %>%
+        arrange(average_rank)
 
     output_csv = here(score_base_dir, "average_kernel_rank.csv")
     write_csv(final_rank_df, output_csv)
@@ -224,7 +224,7 @@ generate_roc_curve_bipolar = function(){
     dir.create(dirname(output_pdf_path), recursive = TRUE, showWarnings = FALSE)
     grDevices::pdf(output_pdf_path, width = 6, height = 6)
     roc_out = reportROC::reportROC(gold = pred_bipolar$bipolar_repodb_validated,
-                predictor = -1*pred_bipolar$Mean_Rank,
+                predictor = -1*pred_bipolar$average_rank,
                 plot=FALSE)
     
     write.csv(pred_bipolar,file=here(output_dir,"prediction_bipolar.csv"),row.names=FALSE)
