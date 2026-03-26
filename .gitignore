@@ -2,3 +2,5 @@
 .local
 *.csv
 *.Rdata
+
+!drug_targets_DrugBank_Gysi.csv
