@@ -1,0 +1,29 @@
+"drug_name"	"drugbank_id"	"ind_name"	"ind_id"	"NCT"	"status"	"phase"	"DetailedStatus"
+"loxapine"	"DB00408"	"Bipolar Disorder"	"C0005586"	NA	"Approved"	NA	NA
+"quetiapine"	"DB01224"	"Bipolar Disorder"	"C0005586"	NA	"Approved"	NA	NA
+"lithium carbonate"	"DB14509"	"Bipolar Disorder"	"C0005586"	NA	"Approved"	NA	NA
+"lithium citrate"	"DB14507"	"Bipolar Disorder"	"C0005586"	NA	"Approved"	NA	NA
+"lithium citrate"	"DB14509"	"Bipolar Disorder"	"C0005586"	NA	"Approved"	NA	NA
+"ceftriaxone"	"DB01212"	"Bipolar Disorder"	"C0005586"	"NCT00512616"	"Withdrawn"	"Phase 2"	NA
+"oxytocin"	"DB00107"	"Bipolar Disorder"	"C0005586"	"NCT02149823"	"Terminated"	"Phase 1"	"All study proceedings stopped prematurely due to Covid-19 restrictions for intranasal formulations"
+"aripiprazole"	"DB01238"	"Bipolar Disorder"	"C0005586"	"NCT01520350"	"Terminated"	"Phase 3"	"recruitment issues"
+"lamotrigine"	"DB00555"	"Bipolar Disorder"	"C0005586"	"NCT00063362"	"Terminated"	"Phase 3"	"Funding Expiration"
+NA	"DB00313"	"Bipolar Disorder"	"C0005586"	"NCT00063362"	"Terminated"	"Phase 3"	"Funding Expiration"
+NA	"DB14509"	"Bipolar Disorder"	"C0005586"	"NCT00063362"	"Terminated"	"Phase 3"	"Funding Expiration"
+"isradipine"	"DB00270"	"Bipolar Disorder"	"C0005586"	"NCT01784666"	"Terminated"	"Phase 2"	"Lack of Enrollment"
+"ketamine"	"DB01221"	"Bipolar Disorder"	"C0005586"	"NCT02882711"	"Terminated"	"Phase 2"	"Increasing off-label practice of IV ketamine administration for treatment-resistant depression."
+"quetiapine"	"DB01224"	"Bipolar Disorder"	"C0005586"	"NCT00771134"	"Terminated"	"Phase 2"	"Study was previously suspended and is now terminated"
+"olanzapine"	"DB00334"	"Bipolar Disorder"	"C0005586"	"NCT00194064"	"Terminated"	"Phase 3"	"Slow enrollment"
+"simvastatin"	"DB00641"	"Bipolar Disorder"	"C0005586"	"NCT01665950"	"Terminated"	"Phase 2"	"Lack of enrollment"
+"riluzole"	"DB00740"	"Bipolar Disorder"	"C0005586"	"NCT00805493"	"Terminated"	"Phase 2"	"Insufficient recruitment of participants"
+"midazolam"	"DB00683"	"Bipolar Disorder"	"C0005586"	"NCT02351869"	"Terminated"	"Phase 2"	"This study was terminated due to COVID-19 pandemic-related halting of recruitment in the context of an upcoming replacement of the study MRI scanner."
+NA	"DB06690"	"Bipolar Disorder"	"C0005586"	"NCT02351869"	"Terminated"	"Phase 2"	"This study was terminated due to COVID-19 pandemic-related halting of recruitment in the context of an upcoming replacement of the study MRI scanner."
+"lamotrigine"	"DB00555"	"Bipolar Disorder"	"C0005586"	"NCT00907985"	"Terminated"	"Phase 1"	"Slow recruitment; trial unlikely to reach completion"
+"quetiapine"	"DB01224"	"Bipolar Disorder"	"C0005586"	"NCT00486798"	"Terminated"	"Phase 3"	"study was not ethically acceptable to continue and therefore it was finally stopped"
+"aripiprazole"	"DB01238"	"Bipolar Disorder"	"C0005586"	"NCT00338273"	"Withdrawn"	"Phase 3"	NA
+"dronabinol"	"DB00470"	"Bipolar Disorder"	"C0005586"	"NCT03206463"	"Terminated"	"Phase 1"	"Feasibility pilot was completed"
+"riluzole"	"DB00740"	"Bipolar Disorder"	"C0005586"	"NCT00054704"	"Terminated"	"Phase 2"	"Placebo was better than active drug."
+"fluoxetine"	"DB00472"	"Bipolar Disorder"	"C0005586"	"NCT00005015"	"Terminated"	"Phase 3"	NA
+"aripiprazole"	"DB01238"	"Bipolar Disorder"	"C0005586"	"NCT00288353"	"Terminated"	"Phase 3"	"unable to secure additional funding"
+"celecoxib"	"DB00482"	"Bipolar Disorder"	"C0005586"	"NCT02726659"	"Terminated"	"Phase 3"	"Difficulty recruiting participants because principal investigator noticed that the participants in the population were responding well to low doses of mood stabilizers and therefor would not be recruited into the study."
+"zonisamide"	"DB00909"	"Bipolar Disorder"	"C0005586"	"NCT01566370"	"Terminated"	"Phase 2"	"recruitment infeasible"
