@@ -25,19 +25,18 @@ get_drugbank_ids = function(){
         dplyr::distinct()
 
     unique_drugbank_ids = drug_target_df %>%
-        dplyr::select(drugbank_id) %>%
+        dplyr::pull(drugbank_id) %>%
         unique()
 
-    print(paste("Unique drugs in Drug-Target Dataframe:", nrow(unique_drugbank_ids)))
+    print(paste("Unique drugs in Drug-Target Dataframe:", length(unique_drugbank_ids)))
     invisible(unique_drugbank_ids)
 }
-get_drug_targets_in_ppi <- function(drugbank_id) {
+get_drug_targets_in_ppi <- function(drugbank_id,ppi_gene_nodes) {
   
     drug_target_df = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv")) %>% 
         distinct() 
   
-    ppi_gene_nodes = get_ppi_nodes()
-  
+
     drug_target_proteins = drug_target_df %>%
         filter(drugbank_id == !!drugbank_id) %>%
         distinct() %>%
@@ -47,4 +46,25 @@ get_drug_targets_in_ppi <- function(drugbank_id) {
     drug_targets_in_ppi <- intersect(drug_target_proteins, ppi_gene_nodes)
 
     invisible(drug_targets_in_ppi)
+}
+
+generate_drug_rank = function(){
+    kernel_names <- c(
+    "diffusion_kernel","pstep_kernel","regularised_laplacian_kernel",
+    "commute_time_kernel","inverse_cosine_kernel"
+  )
+
+
+    drugbank_ids = get_drugbank_ids()
+    ppi_gene_nodes <- get_ppi_nodes()
+    drug_targets = purrr::map(drugbank_ids,get_drug_targets_in_ppi,ppi_gene_nodes)
+
+
+    names(drug_targets) = drugbank_ids
+    glimpse(drug_targets)
+
+    # for(drugbank_id in drugbank_ids){
+
+    # }
+
 }
