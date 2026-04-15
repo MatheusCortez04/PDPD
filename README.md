@@ -91,7 +91,7 @@ Esta opção utiliza os kernels e os dados de fármacos para gerar a matriz de r
 O arquivo `.Rprofile` é um script que é automaticamente executado toda vez que uma sessão R é iniciada no diretório do projeto. Ele tem como função preparar o ambiente para executar sua análise, criando pastas necessárias e carregando os scripts principais.
 
 
-
+<!-- docker compose run --rm --service-ports rstudio  -->
 
 
 #### Funcionalidades do `.Rprofile`
