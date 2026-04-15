@@ -1,7 +1,6 @@
 library(here)
 library(purrr)
 library(dplyr)
-
 scoring_drug_disease_menu = function(){
   while(TRUE){
     clear_console()
@@ -31,4 +30,21 @@ get_drugbank_ids = function(){
 
     print(paste("Unique drugs in Drug-Target Dataframe:", nrow(unique_drugbank_ids)))
     invisible(unique_drugbank_ids)
+}
+get_drug_targets_in_ppi <- function(drugbank_id) {
+  
+    drug_target_df = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv")) %>% 
+        distinct() 
+  
+    ppi_gene_nodes = get_ppi_nodes()
+  
+    drug_target_proteins = drug_target_df %>%
+        filter(drugbank_id == !!drugbank_id) %>%
+        distinct() %>%
+        dplyr::mutate(entrez_id = as.character(entrez_id)) %>%
+        pull(entrez_id)
+
+    drug_targets_in_ppi <- intersect(drug_target_proteins, ppi_gene_nodes)
+
+    invisible(drug_targets_in_ppi)
 }
