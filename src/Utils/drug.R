@@ -1,7 +1,7 @@
 library(here)
 library(purrr)
-library(readr)
-source(here("src","Utils","kernels.R"))
+library(dplyr)
+
 scoring_drug_disease_menu = function(){
   while(TRUE){
     clear_console()
@@ -18,9 +18,17 @@ scoring_drug_disease_menu = function(){
 
 drug_function_mapper = list(
     '1' = function() {
-        run_drug_scoring()
-        summarise_drug_max_score()
-        generate_drug_rank()
     }
 )
 
+get_drugbank_ids = function(){
+    drug_target_df  = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv")) %>%
+        dplyr::distinct()
+
+    unique_drugbank_ids = drug_target_df %>%
+        dplyr::select(drugbank_id) %>%
+        unique()
+
+    print(paste("Unique drugs in Drug-Target Dataframe:", nrow(unique_drugbank_ids)))
+    invisible(unique_drugbank_ids)
+}
