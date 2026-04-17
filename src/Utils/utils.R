@@ -32,11 +32,12 @@ get_mdd_disease_module = function() {
   score_filter = 0.6
   
   disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"), sep="\t")
-  
+  ppi_nodes = get_ppi_nodes()
   mdd_gene_module = disease_gene_df %>%
     filter(diseaseid == mdd_disease_id & score >= score_filter) %>%
     rename(entrez_id = geneid, disease_id = diseaseid) %>% 
     mutate(entrez_id = as.character(entrez_id)) %>% 
+    filter(entrez_id %in% ppi_nodes)%>%
     select(entrez_id, disease_id, score)
   
   invisible(mdd_gene_module)
@@ -45,13 +46,14 @@ get_bipolar_disease_module = function() {
   
   bipolar_disease_id = "C0005586"
   score_filter = 0.6
-  
+  ppi_nodes = get_ppi_nodes()
   disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"), sep="\t")
   
   bipolar_gene_module = disease_gene_df %>%
     filter(diseaseid == bipolar_disease_id & score >= score_filter) %>%
     rename(entrez_id = geneid, disease_id = diseaseid) %>% 
     mutate(entrez_id = as.character(entrez_id)) %>% 
+    filter(entrez_id %in% ppi_nodes)%>%
     select(entrez_id, disease_id, score)
   
   invisible(bipolar_gene_module)
@@ -104,14 +106,9 @@ generate_drug_rank = function() {
     }
 
 }
-
 create_dir <- function(path) {
   if (!dir.exists(path)) {
     message(paste("Creating Dir:", path))
     dir.create(path, recursive = TRUE, mode = "0777")
   }
 }
-
-
-
-
