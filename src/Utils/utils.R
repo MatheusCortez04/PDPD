@@ -10,13 +10,12 @@ is_valid_input_boolean = function(input){
 
 get_ppi_nodes = function(){
     ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
-    cat("PPI  file reading complete.\n")
     proteinA_entrezid = ppi_df$proteinA_entrezid
     proteinB_entrezid = ppi_df$proteinB_entrezid
     all_protein_in_ppi_df = c(proteinA_entrezid,proteinB_entrezid)
-    print(paste("All proteins in PPI Dataframe: ",length(all_protein_in_ppi_df)))
+    cat(sprintf("[INFO] All proteins in PPI Dataframe: %d\n",length(all_protein_in_ppi_df)))
     unique_ordered_proteins_in_ppi_df = unique(all_protein_in_ppi_df)
-    print(paste("Unique proteins in PPI Dataframe: ",length(unique_ordered_proteins_in_ppi_df)))
+    cat(sprintf("[INFO] Unique proteins in PPI Dataframe: %d\n",length(unique_ordered_proteins_in_ppi_df)))
     invisible(unique_ordered_proteins_in_ppi_df)
 }
 
@@ -106,55 +105,13 @@ generate_drug_rank = function() {
 
 }
 
-summarise_drug_max_score = function(){
-    diseases = c("MDD", "BD")
-    kernel_names = c(
-        "diffusion_kernel","pstep_kernel","regularised_laplacian_kernel",
-        "commute_time_kernel","inverse_cosine_kernel"
-    )
-    for(disease in diseases){
-        for(kernel in kernel_names){
-            gene_score_path = here("src","Data","Kernels","Score",disease,paste0(kernel, ".csv"))
-            if (!file.exists(gene_score_path)) next
-             cat("\n✔Building Drug rank to Disease:", disease, "and kernel",kernel, "\n")
-            gene_score_df = read.csv(gene_score_path)
-            drug_target_df= load_drug_target_df()
-
-            drug_gene_score_df = gene_score_df %>%
-                dplyr::left_join(drug_target_df,by="entrez_id")%>%
-                dplyr::filter(!is.na(drugbank_id) & drugbank_id != "") %>%
-                dplyr::group_by(drugbank_id) %>%
-                dplyr::summarise(
-                    max_gene_score = max(gene_score, na.rm = TRUE),
-                    top_entrez_id = entrez_id[which.max(gene_score)],
-                    .groups = "drop" ) %>%  
-                dplyr::arrange(desc(max_gene_score))
-            out_dir  <- here("src","Data","Drug","Score", disease)
-            dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-            out_path = here(out_dir,paste0(kernel, ".csv"))
-            write.csv(drug_gene_score_df,out_path,row.names=FALSE)
-            cat("\n✔ Drug Rank of Kernel:",kernel,"Saved in: ",out_path, "\n")
-        }
-        
-    }
+create_dir <- function(path) {
+  if (!dir.exists(path)) {
+    message(paste("Creating Dir:", path))
+    dir.create(path, recursive = TRUE, mode = "0777")
+  }
 }
 
 
 
-get_drug_targets_in_ppi <- function(drugbank_id,ppi_gene_nodes) {
-  
-    drug_target_df = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv")) %>% 
-        distinct() 
-  
-
-    drug_target_proteins = drug_target_df %>%
-        filter(drugbank_id == !!drugbank_id) %>%
-        distinct() %>%
-        dplyr::mutate(entrez_id = as.character(entrez_id)) %>%
-        pull(entrez_id)
-
-    drug_targets_in_ppi <- intersect(drug_target_proteins, ppi_gene_nodes)
-
-    invisible(drug_targets_in_ppi)
-}
 
