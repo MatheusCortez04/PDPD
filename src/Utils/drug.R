@@ -65,9 +65,31 @@ calculate_drug_score = function(){
     drug_targets = purrr::map(drugbank_ids, get_drug_targets, ppi_gene_nodes,drug_target_df)
     names(drug_targets) = drugbank_ids
 
+    for(kernel_name in kernel_names){
+        kernel_path <- here("src","Data","Kernels","RData", paste0(kernel_name, ".Rdata"))
+        if (!file.exists(kernel_path)) {
+            cat("[WARN]Kernel:",kernel_name, "file not found.\n")
+            next()
+        }
+        kernel_matrix <- load_rdata(kernel_path)
+        for(disease in names(disease_data)){
+            disease_genes <- disease_data[[disease]]$genes
+            scores = purrr::map_dbl(drug_targets,compute_drug_score,disease_genes,kernel_matrix)
+             print(head(scores))
+        }
+    }
+
 }
-read_drug_targets= function(){
+
+read_drug_targets = function(){
     drug_target_df = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv")) %>% 
         distinct() 
     invisible(drug_target_df)
+}
+
+compute_drug_score = function(targets,disease_genes,kernel_matrix) {
+  if (length(targets) <= 0) {
+    return(NA_real_)
+  }
+  mean(kernel_matrix[targets, disease_genes, drop = FALSE], na.rm = TRUE)
 }
