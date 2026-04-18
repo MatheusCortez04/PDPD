@@ -20,7 +20,7 @@ get_ppi_nodes = function(){
 }
 
 load_rdata <- function(path_file) {
-  cat("Loading RData of file :", path_file, "\n")
+  cat("\n Loading RData of file :", path_file, "\n")
   env <- new.env()
   load(path_file, envir = env)
   objs <- ls(env)
@@ -30,85 +30,110 @@ get_mdd_disease_module = function() {
   
   mdd_disease_id = "C1269683"
   score_filter = 0.6
-  
+  cat("\n[INFO] Building MDD disease module...\n")
+
+
   disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"), sep="\t")
   ppi_nodes = get_ppi_nodes()
   mdd_gene_module = disease_gene_df %>%
     filter(diseaseid == mdd_disease_id & score >= score_filter) %>%
     rename(entrez_id = geneid, disease_id = diseaseid) %>% 
     mutate(entrez_id = as.character(entrez_id)) %>% 
+
+  cat(sprintf("[INFO] MDD genes after score filter: %d\n", nrow(mdd_gene_module)))
+
+  mdd_gene_module=mdd_gene_module %>%
     filter(entrez_id %in% ppi_nodes)%>%
     select(entrez_id, disease_id, score)
   
+  cat(sprintf("[INFO] MDD genes after PPI filter: %d\n", nrow(mdd_gene_module)))
+
   invisible(mdd_gene_module)
 }
 get_bipolar_disease_module = function() {
-  
+   cat("\n[INFO] Building Bipolar Disease disease module...\n")
   bipolar_disease_id = "C0005586"
   score_filter = 0.6
+
+  
   ppi_nodes = get_ppi_nodes()
   disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"), sep="\t")
-  
-  bipolar_gene_module = disease_gene_df %>%
+
+ bipolar_gene_module= disease_gene_df %>%
     filter(diseaseid == bipolar_disease_id & score >= score_filter) %>%
     rename(entrez_id = geneid, disease_id = diseaseid) %>% 
-    mutate(entrez_id = as.character(entrez_id)) %>% 
+    mutate(entrez_id = as.character(entrez_id))
+  
+  cat(sprintf("[INFO] Bipolar Disease genes after score filter: %d\n", nrow(bipolar_gene_module)))
+
+   
+  bipolar_gene_module=bipolar_gene_module %>%  
     filter(entrez_id %in% ppi_nodes)%>%
     select(entrez_id, disease_id, score)
   
+  
+  cat(sprintf("[INFO] Bipolar Disease genes after PPI filter: %d\n", nrow(bipolar_gene_module)))
+
   invisible(bipolar_gene_module)
 }
 
-generate_drug_rank = function() {
-    diseases = c("MDD", "BD")
 
-    for(disease in diseases) {
-        base::cat(base::paste("[WARN] Building Average Rank to Disease:", disease, "\n"))
-        base_dir = here::here("src", "Data", "Drug", "Score", disease)
-        
-        pstep_df = read.csv(here::here(base_dir, "pstep_kernel.csv")) %>%
-            dplyr::mutate(pstep_kernel = base::rank(dplyr::desc(max_gene_score), ties.method = "average")) %>%
-            dplyr::select(drugbank_id, pstep_kernel)
-
-        reg_lap_df = read.csv(here::here(base_dir, "regularised_laplacian_kernel.csv")) %>%
-            dplyr::mutate(regularised_laplacian_kernel = base::rank(dplyr::desc(max_gene_score), ties.method = "average")) %>%
-            dplyr::select(drugbank_id, regularised_laplacian_kernel)
-        inv_cos_df = read.csv(here::here(base_dir, "inverse_cosine_kernel.csv")) %>%
-           dplyr::mutate(inverse_cosine_kernel = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
-            dplyr::select(drugbank_id, inverse_cosine_kernel)
-
-        commute_df = read.csv(here::here(base_dir, "commute_time_kernel.csv")) %>%
-             dplyr::mutate(commute_time_kernel = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
-            dplyr::select(drugbank_id, commute_time_kernel)
-
-        diffusion_df = read.csv(here::here(base_dir, "diffusion_kernel.csv")) %>%
-             dplyr::mutate(diffusion_kernel = base::rank(dplyr::desc(max_gene_score), ties.method = "average"))  %>%
-            dplyr::select(drugbank_id, diffusion_kernel)
-
-        merge_df = pstep_df %>%
-            dplyr::left_join(reg_lap_df, by = "drugbank_id") %>%
-            dplyr::left_join(commute_df, by = "drugbank_id") %>%
-            dplyr::left_join(inv_cos_df, by = "drugbank_id") %>%
-            dplyr::left_join(diffusion_df, by = "drugbank_id") 
-            
-
-        final_df <- merge_df %>%
-            dplyr::mutate(
-                average_rank = rowMeans(
-                    dplyr::select(., dplyr::ends_with("_kernel")), 
-                    na.rm = TRUE
-                )
-            ) %>%
-            dplyr::arrange(average_rank) %>%
-            dplyr::select(drugbank_id,dplyr::ends_with("_kernel"),average_rank)
-
-        write.csv(final_df, here(base_dir,paste0("average_rank_", disease, ".csv")), row.names = FALSE)
-    }
-
-}
 create_dir <- function(path) {
   if (!dir.exists(path)) {
     message(paste("Creating Dir:", path))
     dir.create(path, recursive = TRUE, mode = "0777")
   }
+}
+
+get_mdd_disease_module = function() {
+  
+  mdd_disease_id = "C1269683"
+  score_filter = 0.6
+  
+  cat("\n[INFO] Building MDD disease module...\n")
+  
+  disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"), sep="\t")
+  cat(sprintf("[INFO] Total gene-disease associations loaded: %d\n", nrow(disease_gene_df)))
+  
+  ppi_nodes = get_ppi_nodes()
+  cat(sprintf("[INFO] Total PPI nodes available: %d\n", length(ppi_nodes)))
+  
+  # ---- filtro inicial ----
+  filtered_df = disease_gene_df %>%
+    filter(diseaseid == mdd_disease_id)
+  
+  cat(sprintf("[INFO] MDD genes before score filter: %d\n", nrow(filtered_df)))
+  
+  # ---- filtro por score ----
+  filtered_df = filtered_df %>%
+    filter(score >= score_filter)
+  
+  cat(sprintf("[INFO] MDD genes after score >= %.2f: %d\n", score_filter, nrow(filtered_df)))
+  
+  # ---- transformação ----
+  mdd_gene_module = filtered_df %>%
+    rename(entrez_id = geneid, disease_id = diseaseid) %>% 
+    mutate(entrez_id = as.character(entrez_id))
+  
+  # ---- projeção na PPI ----
+  before_ppi <- nrow(mdd_gene_module)
+  
+  mdd_gene_module = mdd_gene_module %>%
+    filter(entrez_id %in% ppi_nodes) %>%
+    select(entrez_id, disease_id, score)
+  
+  after_ppi <- nrow(mdd_gene_module)
+  
+  cat(sprintf(
+    "[INFO] MDD genes after PPI filter: %d (retention: %.2f%%)\n",
+    after_ppi,
+    100 * after_ppi / before_ppi
+  ))
+  
+  # ---- sanity check ----
+  if (after_ppi == 0) {
+    cat("[WARN] MDD module is EMPTY after PPI filtering!\n")
+  }
+  
+  invisible(mdd_gene_module)
 }
