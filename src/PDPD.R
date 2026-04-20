@@ -2,7 +2,6 @@
 library(utils)
 library(here)
 library(tidyverse)
-source(here("src","Utils","graph.R"))
 source(here("src","Utils","kernels.R"))
 source(here("src","Utils","drug.R"))
 source(here("src","Utils","evaluation.R"))
@@ -21,8 +20,6 @@ main= function(){
             if (input == "2") scoring_drug_disease_menu()
             if (input == "3") evaluation_menu()
         }
-
-
     q(save="no") 
 }
 
