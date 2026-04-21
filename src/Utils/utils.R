@@ -33,7 +33,7 @@ get_mdd_disease_module = function() {
   cat("\n[INFO] Building MDD disease module...\n")
 
 
-  disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"), sep="\t")
+  disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"))
   ppi_nodes = get_ppi_nodes()
   mdd_gene_module = disease_gene_df %>%
     filter(diseaseid == mdd_disease_id & score >= score_filter) %>%
@@ -57,7 +57,7 @@ get_bipolar_disease_module = function() {
 
   
   ppi_nodes = get_ppi_nodes()
-  disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"), sep="\t")
+  disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"))
 
  bipolar_gene_module= disease_gene_df %>%
     filter(diseaseid == bipolar_disease_id & score >= score_filter) %>%
