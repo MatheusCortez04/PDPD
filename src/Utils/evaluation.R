@@ -288,7 +288,7 @@ generate_roc_curve_bipolar = function(){
     
     roc_results = reportROC::reportROC(
          gold = prediction_bipolar$validation_label,
-         predictor = -1 * prediction_bipolar$Mean_Rank,
+         predictor = -1 * prediction_bipolar$average_rank,
          plot = TRUE
      )
      grDevices::dev.off()
