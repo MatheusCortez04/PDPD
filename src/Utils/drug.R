@@ -45,8 +45,7 @@ scoring_drug_disease_menu = function(){
 drug_function_mapper = list(
     '1' = function() {
         cat("\n--- Generating and  Drug  Target Matrix  ---\n")
-        drug_target_df  = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv"), sep=",")
-
+        drug_target_df  = load_drug_target_df()
         cat("Drug Target file reading complete.\n")
         ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
         cat("PPI  file reading complete.\n")
@@ -243,8 +242,11 @@ load_drug_target_df = function(){
         Sys.sleep(1.5)
         return()
     }
-    drug_target_df = read.csv(drug_target_file_path)
-    drug_target_df %>% dplyr::distinct(drugbank_id, entrez_id) %>%
+    drug_target_df = read.csv(drug_target_file_path) %>% 
+        rename(drugbank_id=Drug,entrez_id=Target) %>%
+        dplyr::distinct(drugbank_id, entrez_id) %>%
         dplyr::mutate(entrez_id = as.character(entrez_id))
     invisible(drug_target_df)
 }
+
+
