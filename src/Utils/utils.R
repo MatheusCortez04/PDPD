@@ -38,7 +38,7 @@ get_mdd_disease_module = function() {
   mdd_gene_module = disease_gene_df %>%
     filter(diseaseid == mdd_disease_id & score >= score_filter) %>%
     rename(entrez_id = geneid, disease_id = diseaseid) %>% 
-    mutate(entrez_id = as.character(entrez_id)) %>% 
+    mutate(entrez_id = as.character(entrez_id))
 
   cat(sprintf("[INFO] MDD genes after score filter: %d\n", nrow(mdd_gene_module)))
 
