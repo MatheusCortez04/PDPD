@@ -36,7 +36,7 @@ load_rdata <- function(path_file) {
 get_mdd_genes = function(){
   major_depressive_disorder_id = "C1269683"
   score_filter = 0.6
-  disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"), sep="\t")
+  disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"))
   disease_gene_df =disease_gene_df %>%
     filter(diseaseid ==major_depressive_disorder_id &
      score>=score_filter) %>%
@@ -48,7 +48,7 @@ get_mdd_genes = function(){
 get_bipolar_disorder_genes = function(){
   bipolar_disorder_id = "C0005586"
   score_filter =  0.6
-  disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"), sep="\t")
+  disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"))
   disease_gene_df =disease_gene_df %>%
     filter(diseaseid ==bipolar_disorder_id &
      score>=score_filter) %>%
