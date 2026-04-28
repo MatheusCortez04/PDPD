@@ -62,6 +62,7 @@ Para garantir a reprodutibilidade, o projeto é totalmente encapsulado em um amb
     ```
     [1] Kernel Menu
     [2] Drug-Disease Menu
+    [3] Evaluation Menu
     [Q] Exit
     ```
 
@@ -135,13 +136,14 @@ Este é o script principal e o ponto de entrada (entrypoint) de toda a aplicaç�
     * `src/Utils/graph.R`
     * `src/Utils/kernels.R`
     * `src/Utils/drug.R`
+    * `src/Utils/evaluation.R`
 * **Definição da Função `main()`:** Define a função `main()` como o "coração" da aplicação. Esta é a única função que o `.Rprofile` precisa chamar para iniciar todo o fluxo.
   
 * **Loop de Aplicação (Menu Principal):** Implementa um loop `while(TRUE)` que apresenta continuamente o menu principal ao usuário, garantindo que o programa não termine até que o usuário decida sair.
   
-* **Interface do Usuário (UI):** Utiliza `cat()` para exibir as opções de menu (`[1] Kernel Menu`, `[2] Drug-Disease Menu`) e `readline()` para capturar a entrada do usuário.
+* **Interface do Usuário (UI):** Utiliza `cat()` para exibir as opções de menu (`[1] Kernel Menu`, `[2] Drug-Disease Menu`,`[3] Evaluation Menu` e `[Q] Quit` ) e `readline()` para capturar a entrada do usuário.
   
-* **Delegação de Tarefas:** Atua como um "roteador". Ele não realiza os cálculos em si, mas sim delega as tarefas para as funções de submenu (`generate_kernel_menu()` e `scoring_drug_disease_menu()`), que foram carregadas a partir dos scripts em `src/Utils/`.
+* **Delegação de Tarefas:** Atua como um "roteador". Ele não realiza os cálculos em si, mas sim delega as tarefas para as funções de submenu (`generate_kernel_menu()`,`scoring_drug_disease_menu()` e `evaluation_menu`), que foram carregadas a partir dos scripts em `src/Utils/`.
 * **Saída Limpa:** Ao receber a opção 'Q' (e normalizá-la com `toupper()` e `trimws()`), o script sai do loop e chama `q(save="no")`, encerrando a sessão R de forma limpa, sem salvar o *workspace*.
 
 ####  Essa abordagem centraliza o fluxo da aplicação em um único script, que atua como um orquestrador, chamando os módulos especializados (em `src/Utils/`) para executar o trabalho pesado.
