@@ -110,7 +110,8 @@ calculate_drug_score = function(){
 }
 
 read_drug_targets = function(){
-    drug_target_df = read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv")) %>% 
+    drug_target_df = read.csv(here("src","Data","Drug","drug_targets.csv")) %>% 
+        rename(drugbank_id=Drug,entrez_id=Target) %>%
         distinct() 
     invisible(drug_target_df)
 }
