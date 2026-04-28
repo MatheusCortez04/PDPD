@@ -43,8 +43,7 @@ evaluation_function_mapper = list(
 
 created_prediction_mdd_data = function(){
 
-    drug_target_mapping =  read.csv(here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv")) %>% 
-        distinct() 
+    drug_target_mapping =  read_drug_targets()
 
     mdd_gold_standard = read_tsv(
         here("src","Data","REPODB","MDD_REPODB.tsv"),
