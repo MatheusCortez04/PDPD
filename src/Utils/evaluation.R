@@ -22,13 +22,13 @@ evaluation_menu = function(){
 
 evaluation_function_mapper = list(
     '1' = function() {
-        generate_roc_curve_mdd()
+        generate_roc_curve("MDD")
     },
     '2' = function(){
          generate_recall_k_MDD()
     },
     '3'= function(){
-       generate_roc_curve_bipolar()
+       generate_roc_curve("BD")
     },
     '4'= function(){
         generate_recall_k_bipolar()
@@ -37,7 +37,6 @@ evaluation_function_mapper = list(
         generate_roc_to_kernel()
     }
 )
-
 
 generate_recall_k_MDD = function(){
     output_dir = here("src", "Evaluation","MDD")
@@ -92,42 +91,6 @@ generate_recall_k_MDD = function(){
     ggsave(pdf_path, plot = g, width = 8, height = 6)
     message(sprintf("[SUCCESS] Recall@K graph saved at: %s",here(output_recall_dir,"recall_at_k_MDD.pdf")))
     Sys.sleep(1.5)
-}
-
-
-generate_roc_curve_mdd = function(){
-    output_dir = here("src", "Evaluation","MDD")
-
-    score_filter=get_score_disease_gene_association()
-    prediction_mdd_file_path = here(output_dir, paste0("prediction_mdd_score_filter_",score_filter,"_.csv"))
-
-    if(!file.exists(prediction_mdd_file_path)){
-        cat("[WARN] Processed data not found. Running preparation first...\n")
-        prediction_mdd = create_prediction_disease_info("MDD")()
-    }
-    else{
-        prediction_mdd = read.csv(prediction_mdd_file_path)
-    }
- 
-    if (sum(prediction_mdd$validation_label) <= 0) {
-        cat("[WARN] Cannot plot ROC: No hits found in the ranking.\n")
-        return(NULL)
-    }
-   
-    output_roc_dir = here(output_dir,"ROC")
-    dir.create(output_roc_dir, recursive = TRUE, showWarnings = FALSE)
-    output_graph_file_name = "mdd_roc_curve.pdf"
-    grDevices::pdf(here(output_roc_dir,output_graph_file_name), width = 6, height = 6)
-    
-    roc_results = reportROC::reportROC(
-         gold = prediction_mdd$validation_label,
-         predictor = -1 * prediction_mdd$average_rank,
-         plot = TRUE
-     )
-     grDevices::dev.off()
-     message(sprintf("[SUCCESS] ROC curve saved at: %s",here(output_dir, output_graph_file_name)))
-     Sys.sleep(1.5)
-
 }
 generate_roc_to_kernel = function(){
     diseases = c("MDD","BD")
@@ -189,75 +152,6 @@ generate_roc_to_kernel = function(){
                 Sys.sleep(1.5)
         }
     }
-}
-generate_roc_curve_bipolar = function(){
-    output_dir = here("src", "Evaluation","BD")
-    
-    score_filter=get_score_disease_gene_association()
-    prediction_bipolar_file_path =  here(output_dir, paste0("prediction_bipolar_score_filter_",score_filter,"_.csv"))
-
-    if(!file.exists(prediction_bipolar_file_path)){
-        cat("[WARN] Processed data not found. Running preparation first...\n")
-        prediction_bipolar = create_prediction_disease_info("BD")
-    }
-    else{
-        prediction_bipolar = read.csv(prediction_bipolar_file_path)
-    }
- 
-    if (sum(prediction_bipolar$validation_label) <= 0) {
-        cat("[WARN] Cannot plot ROC: No hits found in the ranking.\n")
-        return(NULL)
-    }
-   
-    output_roc_dir = here(output_dir,"ROC")
-    dir.create(output_roc_dir, recursive = TRUE, showWarnings = FALSE)
-    output_graph_file_name = "bipolar_roc_curve.pdf"
-    grDevices::pdf(here(output_roc_dir,output_graph_file_name), width = 6, height = 6)
-    
-    roc_results = reportROC::reportROC(
-         gold = prediction_bipolar$validation_label,
-         predictor = -1 * prediction_bipolar$average_rank,
-         plot = TRUE
-     )
-     grDevices::dev.off()
-     message(sprintf("[SUCCESS] ROC curve saved at: %s",here(output_dir, output_graph_file_name)))
-     Sys.sleep(1.5)
-
-}
-
-generate_roc_curve_disease = function(disease = c("MDD","BD")){
-    disease = match.arg(disease)
-    output_dir = here("src", "Evaluation",disease)
-    file_prefix = ifelse(disease == "MDD", "mdd", "bipolar")
-    prediction_file_path = here(output_dir,"prediction_bipolar.csv")
-
-    if(!file.exists(prediction_bipolar_file_path)){
-        cat("[WARN] Processed data not found. Running preparation first...\n")
-        prediction_bipolar = create_prediction_disease_info("BD")()
-    }
-    else{
-        prediction_bipolar = read.csv(prediction_bipolar_file_path)
-    }
- 
-    if (sum(prediction_bipolar$validation_label) <= 0) {
-        cat("[WARN] Cannot plot ROC: No hits found in the ranking.\n")
-        return(NULL)
-    }
-   
-    output_roc_dir = here(output_dir,"ROC")
-    dir.create(output_roc_dir, recursive = TRUE, showWarnings = FALSE)
-    output_graph_file_name = "bipolar_roc_curve.pdf"
-    grDevices::pdf(here(output_roc_dir,output_graph_file_name), width = 6, height = 6)
-    
-    roc_results = reportROC::reportROC(
-         gold = prediction_bipolar$validation_label,
-         predictor = -1 * prediction_bipolar$average_rank,
-         plot = TRUE
-     )
-     grDevices::dev.off()
-     message(sprintf("[SUCCESS] ROC curve saved at: %s",here(output_dir, output_graph_file_name)))
-     Sys.sleep(1.5)
-
 }
 
 generate_recall_k_bipolar = function(){
@@ -396,4 +290,50 @@ create_prediction_disease_info = function(disease = c("MDD", "BD")) {
     create_top_drugs_file(disease, 20)
     
     invisible(processed_predictions)
+}
+
+generate_roc_curve = function(disease = c("MDD", "BD")) {
+    disease = match.arg(disease)
+
+    file_suffixes = c("MDD" = "mdd", "BD" = "bipolar")
+    file_suffix = file_suffixes[disease]
+
+    output_dir = here("src", "Evaluation", disease)
+    score_filter = get_score_disease_gene_association()
+    
+    prediction_file_path = here(output_dir, paste0("prediction_", file_suffix, "_score_filter_", score_filter, "_.csv"))
+
+    if (file.exists(prediction_file_path)) {
+        prediction_data = read.csv(prediction_file_path)
+    }
+    
+    if (!file.exists(prediction_file_path)) {
+        cat("[WARN] Processed data not found. Running preparation first...\n")
+        prediction_data = create_prediction_disease_info(disease)
+    }
+
+    if (sum(prediction_data$validation_label) <= 0) {
+        cat(sprintf("[WARN] Cannot plot ROC for %s: No hits found in the ranking.\n", disease))
+        return(NULL)
+    }
+   
+    output_roc_dir = here(output_dir, "ROC")
+    dir.create(output_roc_dir, recursive = TRUE, showWarnings = FALSE)
+    output_graph_file_name = paste0(file_suffix,"_score_filter_",score_filter,"_roc_curve.pdf")
+    output_graph_path = here(output_roc_dir, output_graph_file_name)
+    
+    grDevices::pdf(output_graph_path, width = 6, height = 6)
+    
+    roc_results = reportROC::reportROC(
+         gold = prediction_data$validation_label,
+         predictor = -1 * prediction_data$average_rank,
+         plot = TRUE
+    )
+    
+    grDevices::dev.off()
+    
+    message(sprintf("[SUCCESS] ROC curve saved at: %s", output_graph_path))
+    Sys.sleep(1.5)
+    
+    invisible(roc_results)
 }

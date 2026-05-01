@@ -55,9 +55,6 @@ drug_function_mapper = list(
         calculate_drug_score()
         generate_drug_rank("MDD")
         generate_drug_rank("BD")
-    },
-    '5'= function(){
-        generate_roc_curve_bipolar()
     }
 )
 
@@ -194,42 +191,6 @@ process_scores_for_disease = function(kernel,disease_info,drug_protein_matrix,ke
 
 # COM A VALIDACAO ATUAL NÃO HÁ NENHUMA DROGA APROVADA PARA BIPOLARIDADE
 # O QUE GERA UM PDF VAZIO, VERIFICAR 
-generate_roc_curve_bipolar = function(){
-    bipolar_repodb = read_tsv(here("src","Data","REPODB","BIPOLAR_REPODB.tsv"), show_col_types = FALSE)
-    bipolar_repodb = bipolar_repodb %>% filter(status=="Approved")
-    cat("Total de drogas valida pelo RepoDb: ", nrow(bipolar_repodb), "\n")
-    bipolar_rank_file_path = here("src", "Data", "Drug", "Score", "BD","average_kernel_rank.csv")
-    bipolar_average_rank = read.csv(bipolar_rank_file_path)
-
-    pred_bipolar = bipolar_average_rank %>% 
-        mutate(bipolar_repodb_validated = ifelse(drugbank_id %in% bipolar_repodb$drugbank_id, 1, 0))
-
-    previstas_validas = pred_bipolar %>% filter(bipolar_repodb_validated==1)
-    cat("Total de drogas previtas  validas: ", nrow(previstas_validas), "\n")
-    pred_bipolar$bipolar_repodb_validated = factor(pred_bipolar$bipolar_repodb_validated,
-                          levels = c(0,1),
-                          labels = c("Not validated by repODB", "Validated by repODB"))
-
-    if(nrow(previstas_validas)<=0){
-        cat("Curva ROC indisponivel pois não foi previsto nenhuma droga:\n")
-        Sys.sleep(1.5)
-        return(NULL)
-    }
-    output_pdf_path = here("src", "Relatorios", "ROC", "bipolar_average_rank.pdf")
-    table(pred_bipolar$bipolar_repodb_validated)
-    dir.create(dirname(output_pdf_path), recursive = TRUE, showWarnings = FALSE)
-    grDevices::pdf(output_pdf_path, width = 6, height = 6)
-    roc_out = reportROC::reportROC(gold = pred_bipolar$bipolar_repodb_validated,
-                predictor = -1*pred_bipolar$average_rank,
-                plot=FALSE)
-    
-    write.csv(pred_bipolar,file=here(output_dir,"prediction_bipolar.csv"),row.names=FALSE)
-    plot(roc_out)
-    grDevices::dev.off()
-    message(sprintf("Salvando Curva ROC em: %s", output_pdf_path))
-    Sys.sleep(1.5)
-    return(roc_out)
-}
 
 load_drug_target_df = function(){
     drug_target_file_path = here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv")
