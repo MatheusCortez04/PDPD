@@ -35,34 +35,10 @@ load_rdata <- function(path_file) {
   objs <- ls(env)
   return(env[[objs]])
 }
-get_mdd_genes = function(){
-  major_depressive_disorder_id = "C1269683"
-  score_filter =  get_score_disease_gene_association()
-  disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"))
-  disease_gene_df =disease_gene_df %>%
-    filter(diseaseid ==major_depressive_disorder_id &
-     score>=score_filter) %>%
-     rename(gene_id=geneid,disease_id=diseaseid) %>% 
-     select(gene_id,disease_id,score)
-  invisible(disease_gene_df)
-
-}
-get_bipolar_disorder_genes = function(){
-  bipolar_disorder_id = "C0005586"
-  score_filter =  get_score_disease_gene_association()
-  disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"))
-  disease_gene_df =disease_gene_df %>%
-    filter(diseaseid ==bipolar_disorder_id &
-     score>=score_filter) %>%
-     rename(gene_id=geneid,disease_id=diseaseid) %>% 
-     select(gene_id,disease_id,score)
-  invisible(disease_gene_df)
-
-}
 
 build_protein_mdd_df= function(){
   all_proteins = get_ppi_nodes()
-  mdd_genes = get_mdd_genes()
+  mdd_genes = get_disease_genes("MDD")
   cat("Creating MDD protein DataFrame....")
   mdd_vector = data.frame(gene_id=all_proteins)
   mdd_vector <- mdd_vector %>% mutate(
@@ -84,7 +60,7 @@ build_protein_mdd_df= function(){
 
 build_protein_bipolar_df= function(){
   all_proteins = get_ppi_nodes()
-  bipolar_genes = get_bipolar_disorder_genes()
+  bipolar_genes = get_disease_genes("BD")
   cat("Creating BD protein DataFrame....")
   bipolar_vector = data.frame(gene_id=all_proteins)
   bipolar_vector <- bipolar_vector %>% mutate(
@@ -113,4 +89,24 @@ create_dir <- function(path) {
 get_score_disease_gene_association = function(){
   score_filter =  0.6
   invisible(score_filter)
+}
+
+get_disease_genes = function(disease = c("MDD", "BD")) {
+  disease = match.arg(disease)
+
+  disease_ids = c(
+    "MDD" = "C1269683", 
+    "BD"  = "C0005586"
+  )
+  target_disease_id = disease_ids[disease]
+  
+  score_filter = get_score_disease_gene_association()
+  disease_gene_df = read.csv(here("src", "Data", "Disease", "disease_genes.csv"))
+  
+  disease_gene_df = disease_gene_df %>%
+    dplyr::filter(diseaseid == target_disease_id & score >= score_filter) %>%
+    dplyr::rename(gene_id = geneid, disease_id = diseaseid) %>% 
+    dplyr::select(gene_id, disease_id, score)
+  
+  invisible(disease_gene_df)
 }
