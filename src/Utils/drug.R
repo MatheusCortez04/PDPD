@@ -47,10 +47,7 @@ drug_function_mapper = list(
         cat("\n--- Generating and  Drug  Target Matrix  ---\n")
         drug_target_df  = load_drug_target_df()
         cat("Drug Target file reading complete.\n")
-        ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
-        cat("PPI  file reading complete.\n")
-
-        protein_nodes = get_ppi_nodes(ppi_df)
+        protein_nodes = get_ppi_nodes()
         drug_nodes= get_drug_nodes(drug_target_df)
         generate_ordered_drug_protein_matrix(drug_target_df,protein_nodes,drug_nodes)
     },
@@ -249,4 +246,17 @@ load_drug_target_df = function(){
     invisible(drug_target_df)
 }
 
+get_drug_targets = function(drugbank_id,ppi_gene_nodes,drug_target_df) {
+
+    drug_target_proteins = drug_target_df %>%
+        filter(drugbank_id == !!drugbank_id) %>%
+        distinct() %>%
+        dplyr::mutate(
+            drugbank_id = as.character(drugbank_id),
+            entrez_id   = as.character(entrez_id)) %>%
+        pull(entrez_id)
+
+    drug_target_proteins = intersect(drug_target_proteins, ppi_gene_nodes)
+    invisible(drug_target_proteins)
+}
 
