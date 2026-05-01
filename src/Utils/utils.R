@@ -29,7 +29,7 @@ load_rdata <- function(path_file) {
 get_mdd_disease_module = function() {
   
   mdd_disease_id = "C1269683"
-  score_filter = 0.6
+  score_filter = get_score_disease_gene_association()
   cat("\n[INFO] Building MDD disease module...\n")
 
 
@@ -53,7 +53,7 @@ get_mdd_disease_module = function() {
 get_bipolar_disease_module = function() {
    cat("\n[INFO] Building Bipolar Disease disease module...\n")
   bipolar_disease_id = "C0005586"
-  score_filter = 0.6
+  score_filter = get_score_disease_gene_association()
 
   
   ppi_nodes = get_ppi_nodes()
@@ -83,4 +83,8 @@ create_dir <- function(path) {
     message(paste("Creating Dir:", path))
     dir.create(path, recursive = TRUE, mode = "0777")
   }
+}
+get_score_disease_gene_association = function(){
+  score_filter =  0.6
+  invisible(score_filter)
 }
