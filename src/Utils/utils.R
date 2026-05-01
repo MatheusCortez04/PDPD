@@ -37,7 +37,7 @@ load_rdata <- function(path_file) {
 }
 get_mdd_genes = function(){
   major_depressive_disorder_id = "C1269683"
-  score_filter = 0.6
+  score_filter =  get_score_disease_gene_association()
   disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"))
   disease_gene_df =disease_gene_df %>%
     filter(diseaseid ==major_depressive_disorder_id &
@@ -49,7 +49,7 @@ get_mdd_genes = function(){
 }
 get_bipolar_disorder_genes = function(){
   bipolar_disorder_id = "C0005586"
-  score_filter =  0.6
+  score_filter =  get_score_disease_gene_association()
   disease_gene_df  = read.csv(here("src","Data","Disease","disease_genes.csv"))
   disease_gene_df =disease_gene_df %>%
     filter(diseaseid ==bipolar_disorder_id &
@@ -82,7 +82,6 @@ build_protein_mdd_df= function(){
   invisible(mdd_vector)
 }
 
-
 build_protein_bipolar_df= function(){
   all_proteins = get_ppi_nodes()
   bipolar_genes = get_bipolar_disorder_genes()
@@ -109,4 +108,9 @@ create_dir <- function(path) {
     message(paste("Creating Dir:", path))
     dir.create(path, recursive = TRUE, mode = "0777")
   }
+}
+
+get_score_disease_gene_association = function(){
+  score_filter =  0.6
+  invisible(score_filter)
 }
