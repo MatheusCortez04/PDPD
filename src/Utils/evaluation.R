@@ -222,14 +222,15 @@ generate_recall_k_MDD = function(){
         check_overlap=TRUE
     )+
     labs(
-        title = "Recall@K para MDD",
+        title =  paste0("Recall@K - Transtorno Depressivo Maior GDA Score >= ",score_filter),
         x = "K (Top-K)",
         y = "Recall") +
     theme_minimal(base_size = 14)
 
     output_recall_dir= here(output_dir,"Recall")
     dir.create(output_recall_dir, recursive = TRUE, showWarnings = FALSE)
-    pdf_path = here(output_recall_dir,"recall_at_k_MDD.pdf")
+
+    pdf_path = pdf_filename = here(output_recall_dir,paste0("recall_at_k_mdd_score_filter_",score_filter,"_.pdf"))
     ggsave(pdf_path, plot = g, width = 8, height = 6)
 
 }
@@ -407,7 +408,6 @@ create_prediction_disease_info = function(disease = c("MDD", "BD")) {
     cat(sprintf("[INFO] Total valid drugs in RepoDB (Gold Standard) for %s: %d\n", disease, nrow(gold_standard)))
 
     rank_file_path = here("src", "Data", "Drug", "Score", disease, rank_file_name)
-    print(file.exists(rank_file_path))
     if (!file.exists(rank_file_path)) {
         cat("[WARN] Average Rank file not found. Building first...\n")
         drug_function_mapper[[1]]()
