@@ -68,8 +68,8 @@ calculate_drug_score = function(){
     )
     drug_protein_matrix = load_drug_target_matrix()
     disease_data <- list(
-        MDD = list(name = "MDD", vector = build_protein_mdd_df()),
-        BD  = list(name = "BD",  vector = build_protein_bipolar_df())
+        MDD = list(name = "MDD", vector = build_protein_disease_df("MDD")),
+        BD  = list(name = "BD",  vector = build_protein_disease_df("BD"))
     )
     purrr::walk(kernel_names,function(kernel_name){
         kernel_path_rdata = here("src","Data","Kernels","RData", paste0(kernel_name, ".Rdata"))

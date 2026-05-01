@@ -36,49 +36,6 @@ load_rdata <- function(path_file) {
   return(env[[objs]])
 }
 
-build_protein_mdd_df= function(){
-  all_proteins = get_ppi_nodes()
-  mdd_genes = get_disease_genes("MDD")
-  cat("Creating MDD protein DataFrame....")
-  mdd_vector = data.frame(gene_id=all_proteins)
-  mdd_vector <- mdd_vector %>% mutate(
-   is_disease = ifelse(gene_id %in% mdd_genes$gene_id, 1, 0))
-
-
-  output_file_name ="mdd_genes_vector"
-  output_path= here("src","Data","Disease")
-  output_file_path_csv = here(output_path,paste0(output_file_name,".csv"))
-
-  output_path_rdata =here(output_path,"Rdata")
-  create_dir(output_path_rdata)
-  output_file_path_rdata = here(output_path_rdata,paste0(output_file_name,".Rdata"))
-  
-  write.csv(mdd_vector,file=output_file_path_csv,row.names=FALSE )
-  save(mdd_vector, file = output_file_path_rdata)
-  invisible(mdd_vector)
-}
-
-build_protein_bipolar_df= function(){
-  all_proteins = get_ppi_nodes()
-  bipolar_genes = get_disease_genes("BD")
-  cat("Creating BD protein DataFrame....")
-  bipolar_vector = data.frame(gene_id=all_proteins)
-  bipolar_vector <- bipolar_vector %>% mutate(
-   is_disease = ifelse(gene_id %in% bipolar_genes$gene_id, 1, 0))
-  output_file_name ="bipolar_genes_vector"
-  output_path= here("src","Data","Disease")
-  output_file_path_csv = here(output_path,paste0(output_file_name,".csv"))
-
-  output_path_rdata =here(output_path,"Rdata")
-  create_dir(output_path_rdata)
-
-  output_file_path_rdata = here(output_path_rdata,paste0(output_file_name,".Rdata"))
-  
-  write.csv(bipolar_vector,file=output_file_path_csv,row.names=FALSE)
-  save(bipolar_vector, file = output_file_path_rdata)
-  invisible(bipolar_vector)
-}
-
 create_dir <- function(path) {
   if (!dir.exists(path)) {
     message(paste("Creating Dir:", path))
@@ -109,4 +66,36 @@ get_disease_genes = function(disease = c("MDD", "BD")) {
     dplyr::select(gene_id, disease_id, score)
   
   invisible(disease_gene_df)
+}
+
+build_protein_disease_df = function(disease = c("MDD", "BD")) {
+  disease = match.arg(disease)
+  
+  all_proteins = get_ppi_nodes()
+  disease_genes = get_disease_genes(disease)
+  
+
+  cat(paste0("Creating ", disease, " protein DataFrame....\n"))
+  
+  disease_vector = data.frame(gene_id = all_proteins)
+  disease_vector = disease_vector %>% 
+    dplyr::mutate(
+      is_disease = ifelse(gene_id %in% disease_genes$gene_id, 1, 0)
+    )
+
+  file_prefix = ifelse(disease == "MDD", "mdd", "bipolar")
+  score_filter = get_score_disease_gene_association()
+  output_file_name = paste0(file_prefix, "_genes_vector_score_filter_",score_filter)
+  
+  output_path = here("src", "Data", "Disease")
+  output_file_path_csv = here(output_path, paste0(output_file_name, "_.csv"))
+
+  output_path_rdata = here(output_path, "Rdata")
+  create_dir(output_path_rdata)
+  output_file_path_rdata = here(output_path_rdata, paste0(output_file_name, "_.Rdata"))
+  
+  write.csv(disease_vector, file = output_file_path_csv, row.names = FALSE)
+  save(disease_vector, file = output_file_path_rdata)
+  
+  invisible(disease_vector)
 }
