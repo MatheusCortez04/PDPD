@@ -1,4 +1,6 @@
 source(here("src","Utils","drug.R"))
+source(here("src","Utils","utils.R"))
+
 evaluation_menu = function(){
   while(TRUE){
     clear_console()
@@ -161,7 +163,7 @@ created_prediction_mdd_data = function(){
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
     write.csv(processed_predictions,file=here(output_dir,"prediction_mdd.csv"),row.names=FALSE)
     message(sprintf("[SUCCESS] prediction file  saved at: %s",here(output_dir,"prediction_mdd.csv")))
-
+    create_top_drugs_file("MDD",20)
     invisible(processed_predictions)
 }
 generate_roc_to_kernel = function(){
@@ -260,7 +262,7 @@ create_prediction_bipolar_data = function(){
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
     write.csv(processed_predictions,file=here(output_dir,"prediction_bipolar.csv"),row.names=FALSE)
     message(sprintf("[SUCCESS] prediction file  saved at: %s",here(output_dir,"prediction_bipolar.csv")))
-
+    create_top_drugs_file("BD",20)
     invisible(processed_predictions)
 }
 
@@ -349,4 +351,30 @@ generate_recall_k_bipolar = function(){
     ggsave(pdf_path, plot = g, width = 8, height = 6)
     message(sprintf("[SUCCESS] Recall@K graph saved at: %s",here(output_recall_dir,"recall_at_k_bipolar.pdf")))
     Sys.sleep(1.5)
+}
+
+
+create_top_drugs_file= function(disease = c("MDD", "BD"),n=10){
+    disease = match.arg(disease)
+    output_dir = here("src", "Evaluation",disease)
+    prediction_disease_file_path = here(output_dir,paste0("prediction_",tolower(disease),".csv"))
+
+    if(file.exists(prediction_disease_file_path)) {
+        prediction_data = read.csv(prediction_disease_file_path) 
+    }
+    if(!file.exists(prediction_disease_file_path)) {
+        cat("[WARN] Processed data not found. Running preparation first...\n")
+        prediction_data = created_prediction_mdd_data()
+    }
+    drug_target_mapping  = load_drug_target_df()
+    ppi_gene_nodes= get_ppi_nodes()
+    top_n_drugs= prediction_data %>% dplyr::slice_head(n=n) %>% 
+        dplyr::select(drugbank_id,validation_status) %>%
+        dplyr::rowwise()%>%
+        dplyr::mutate(target_count = length(get_drug_targets(drugbank_id,ppi_gene_nodes,drug_target_mapping))) %>%
+        dplyr::ungroup()
+    output_file_name= here(output_dir,paste0("top_",n,"_drugs_",disease,".csv"))
+    write.csv(top_n_drugs,output_file_name,row.names = FALSE)
+    message(sprintf("[SUCCESS] Top Drug file  saved at: %s",output_file_name))
+
 }
