@@ -25,13 +25,13 @@ evaluation_function_mapper = list(
         generate_roc_curve("MDD")
     },
     '2' = function(){
-         generate_recall_k_MDD()
+         generate_recall_k("MDD")
     },
     '3'= function(){
        generate_roc_curve("BD")
     },
     '4'= function(){
-        generate_recall_k_bipolar()
+        generate_recall_k("BD")
     },
     '5'= function(){
         generate_roc_to_kernel()
@@ -154,59 +154,6 @@ generate_roc_to_kernel = function(){
     }
 }
 
-generate_recall_k_bipolar = function(){
-    output_dir = here("src", "Evaluation","BD")
-    prediction_bipolar_file_path = here(output_dir,"prediction_bipolar.csv")
-
-    if(!file.exists(prediction_bipolar_file_path)){
-        cat("[WARN] Processed data not found. Running preparation first...\n")
-        prediction_data = create_prediction_disease_info("BD")()
-    }
-    else{
-        prediction_data = read.csv(prediction_bipolar_file_path) 
-    }
-
-    total_hits_count = sum(prediction_data$validation_label)
-    if (total_hits_count == 0) {
-        cat("[WARN] No hits found for recall calculation.\n")
-        return(NULL)
-    }
-    recall_values = cumsum(prediction_data$validation_label) / total_hits_count
-
-    # #cumSum realiza a soma cumulariva e divide pelo total de verdadeiros positivos
-    # # recall = VP/VP+FN(neste caso nao tem FN a nao ser que seja inserido um valor de corte no rank)
-
-    recall_df = data.frame(
-        K = 1:nrow(prediction_data),
-        Recall = recall_values
-    )
-
-    recall_df$highlight <- ifelse(recall_df$K %% 50 == 0, TRUE, FALSE)
-        g = ggplot(recall_df, aes(x = K, y = Recall)) +
-        geom_line(size = 1) +
-        geom_point(
-            data = subset(recall_df, highlight == TRUE),
-            size = 3,
-            color = "red") +
-    geom_text(
-        data = subset(recall_df, highlight == TRUE),
-        aes(label = paste0("(", K, ", ", round(Recall, 3), ")")),
-        vjust = -0.7,
-        size = 3,
-        check_overlap=TRUE
-    )+
-    labs(
-        title = "Recall@K Bipolar Disorder",
-        x = "K (Top-K)",
-        y = "Recall") +
-    theme_minimal(base_size = 14)
-    output_recall_dir= here(output_dir,"Recall")
-    dir.create(output_recall_dir, recursive = TRUE, showWarnings = FALSE)
-    pdf_path = here(output_recall_dir,"recall_at_k_bipolar.pdf")
-    ggsave(pdf_path, plot = g, width = 8, height = 6)
-    message(sprintf("[SUCCESS] Recall@K graph saved at: %s",here(output_recall_dir,"recall_at_k_bipolar.pdf")))
-    Sys.sleep(1.5)
-}
 create_top_drugs_file= function(disease = c("MDD", "BD"),n=10){
     disease = match.arg(disease)
 
@@ -336,4 +283,77 @@ generate_roc_curve = function(disease = c("MDD", "BD")) {
     Sys.sleep(1.5)
     
     invisible(roc_results)
+}
+
+generate_recall_k = function(disease = c("MDD", "BD")) {
+    disease = match.arg(disease)
+
+    file_suffixes = c("MDD" = "mdd", "BD" = "bipolar")
+
+    score_filter = get_score_disease_gene_association()
+    plot_titles = c("MDD" = paste0("Recall@K - Transtorno Depressivo Maior GDA Score >= ",score_filter), 
+                    "BD" = paste0("Recall@K - Transtorno Bipolar GDA Score >= ",score_filter))
+
+    file_suffix = file_suffixes[disease]
+    plot_title = plot_titles[disease]
+
+    output_dir = here("src", "Evaluation", disease)
+    prediction_file_path = here(output_dir, paste0("prediction_", file_suffix, ".csv"))
+
+    if (file.exists(prediction_file_path)) {
+        prediction_data = read.csv(prediction_file_path) 
+    }
+    if (!file.exists(prediction_file_path)) {
+        cat("[WARN] Processed data not found. Running preparation first...\n")
+        prediction_data = create_prediction_disease_info(disease)
+    }
+
+    total_hits_count = sum(prediction_data$validation_label)
+    
+    if (total_hits_count == 0) {
+        cat(sprintf("[WARN] No hits found for recall calculation for %s.\n", disease))
+        return(NULL)
+    }
+    
+    recall_values = cumsum(prediction_data$validation_label) / total_hits_count
+
+    recall_df = data.frame(
+        K = 1:nrow(prediction_data),
+        Recall = recall_values
+    )
+
+    recall_df$highlight = ifelse(recall_df$K %% 50 == 0, TRUE, FALSE)
+
+    g = ggplot(recall_df, aes(x = K, y = Recall)) +
+        geom_line(size = 1) +
+        geom_point(
+            data = subset(recall_df, highlight == TRUE),
+            size = 3,
+            color = "red"
+        ) +
+        geom_text(
+            data = subset(recall_df, highlight == TRUE),
+            aes(label = paste0("(", K, ", ", round(Recall, 3), ")")),
+            vjust = -0.7,
+            size = 3,
+            check_overlap = TRUE
+        ) +
+        labs(
+            title = plot_title,
+            x = "K (Top-K)",
+            y = "Recall"
+        ) +
+        theme_minimal(base_size = 14)
+
+    output_recall_dir = here(output_dir, "Recall")
+    dir.create(output_recall_dir, recursive = TRUE, showWarnings = FALSE)
+    
+    pdf_filename = paste0("recall_at_k_", file_suffix, "_score_filter_",score_filter,"_.pdf")
+    pdf_path = here(output_recall_dir, pdf_filename)
+    
+    ggsave(pdf_path, plot = g, width = 8, height = 6)
+    message(sprintf("[SUCCESS] Recall@K graph saved at: %s", pdf_path))
+    
+    Sys.sleep(1.5)
+    invisible(recall_df)
 }
