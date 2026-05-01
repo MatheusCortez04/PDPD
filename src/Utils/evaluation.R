@@ -45,7 +45,7 @@ generate_recall_k_MDD = function(){
 
     if(!file.exists(prediction_mdd_file_path)){
         cat("[WARN] Processed data not found. Running preparation first...\n")
-        prediction_data = created_prediction_mdd_data()
+        prediction_data = create_prediction_disease_info("MDD")()
     }
     else{
         prediction_data = read.csv(prediction_mdd_file_path) 
@@ -97,11 +97,13 @@ generate_recall_k_MDD = function(){
 
 generate_roc_curve_mdd = function(){
     output_dir = here("src", "Evaluation","MDD")
-    prediction_mdd_file_path = here(output_dir,"prediction_mdd.csv")
+
+    score_filter=get_score_disease_gene_association()
+    prediction_mdd_file_path = here(output_dir, paste0("prediction_mdd_score_filter_",score_filter,"_.csv"))
 
     if(!file.exists(prediction_mdd_file_path)){
         cat("[WARN] Processed data not found. Running preparation first...\n")
-        prediction_mdd = created_prediction_mdd_data()
+        prediction_mdd = create_prediction_disease_info("MDD")()
     }
     else{
         prediction_mdd = read.csv(prediction_mdd_file_path)
@@ -126,45 +128,6 @@ generate_roc_curve_mdd = function(){
      message(sprintf("[SUCCESS] ROC curve saved at: %s",here(output_dir, output_graph_file_name)))
      Sys.sleep(1.5)
 
-}
-
-created_prediction_mdd_data = function(){
-    drug_target_mapping  = load_drug_target_df()
-    mdd_gold_standard = read_tsv(here("src","Data","REPODB","MDD_REPODB.tsv"), show_col_types = FALSE)    
-    mdd_gold_standard = mdd_gold_standard %>%  dplyr::semi_join(drug_target_mapping,by='drugbank_id') %>% 
-      filter(status=="Approved")
- 
-    cat(sprintf("[INFO] Total valid drugs in RepoDB (Gold Standard): %d\n",nrow(mdd_gold_standard)))
-    rank_file_path = here("src", "Data", "Drug", "Score", "MDD", "average_kernel_rank.csv")
-    
-    if (!file.exists(rank_file_path)) {
-      cat("[WARN] Average Rank file not found. Building first...\n")
-      drug_function_mapper[['1']]()
-      drug_function_mapper[['2']]()
-
-    }
-     mdd_prediction = read.csv(rank_file_path)
-    processed_predictions = mdd_prediction %>% 
-        dplyr::mutate(
-            validation_label =  ifelse(drugbank_id %in% mdd_gold_standard$drugbank_id, 1, 0),
-            validation_status = factor(validation_label,
-                                             levels = c(0, 1),
-                                             labels = c("Not validated by RepoDB", "Validated by RepoDB"))
-            )
-
-    validated_hits = processed_predictions %>% filter(validation_label==1)
-    cat(sprintf("[INFO] Total predicted hits validated: %d\n",nrow(validated_hits)))
-    if (nrow(validated_hits) <= 0) {
-         cat("[WARN] ROC curve unavailable: No validated drugs were predicted in the ranking.\n")
-         Sys.sleep(1.5)
-         return(NULL)
-    }
-    output_dir =  here("src", "Evaluation","MDD")
-    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-    write.csv(processed_predictions,file=here(output_dir,"prediction_mdd.csv"),row.names=FALSE)
-    message(sprintf("[SUCCESS] prediction file  saved at: %s",here(output_dir,"prediction_mdd.csv")))
-    create_top_drugs_file("MDD",20)
-    invisible(processed_predictions)
 }
 generate_roc_to_kernel = function(){
     diseases = c("MDD","BD")
@@ -227,52 +190,50 @@ generate_roc_to_kernel = function(){
         }
     }
 }
-
-create_prediction_bipolar_data = function(){
-    rank_file_path = here("src", "Data", "Drug", "Score", "BD", "average_kernel_rank.csv")
-    
-    if (!file.exists(rank_file_path)) {
-        cat("[WARN] Average Rank file not found. Building first...\n")
-        drug_function_mapper[['1']]()
-        drug_function_mapper[['2']]()
-    }
-    drug_target_mapping  = load_drug_target_df()
-    bipolar_gold_standard = read_tsv(here("src","Data","REPODB","BIPOLAR_REPODB.tsv"), show_col_types = FALSE)    
-    bipolar_gold_standard = bipolar_gold_standard %>%  dplyr::semi_join(drug_target_mapping,by='drugbank_id') %>% 
-      filter(status=="Approved")
- 
-    cat(sprintf("[INFO] Total valid drugs in RepoDB (Gold Standard): %d\n",nrow(bipolar_gold_standard)))
-    bipolar_prediction = read.csv(rank_file_path)
-    processed_predictions = bipolar_prediction %>% 
-        dplyr::mutate(
-            validation_label =  ifelse(drugbank_id %in% bipolar_gold_standard$drugbank_id, 1, 0),
-            validation_status = factor(validation_label,
-                                             levels = c(0, 1),
-                                             labels = c("Not validated by RepoDB", "Validated by RepoDB"))
-            )
-
-    validated_hits = processed_predictions %>% filter(validation_label==1)
-    cat(sprintf("[INFO] Total predicted hits validated: %d\n",nrow(validated_hits)))
-    if (nrow(validated_hits) <= 0) {
-         cat("[WARN] ROC curve unavailable: No validated drugs were predicted in the ranking.\n")
-         Sys.sleep(1.5)
-         return(NULL)
-    }
-    output_dir =  here("src", "Evaluation","BD")
-    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-    write.csv(processed_predictions,file=here(output_dir,"prediction_bipolar.csv"),row.names=FALSE)
-    message(sprintf("[SUCCESS] prediction file  saved at: %s",here(output_dir,"prediction_bipolar.csv")))
-    create_top_drugs_file("BD",20)
-    invisible(processed_predictions)
-}
-
 generate_roc_curve_bipolar = function(){
     output_dir = here("src", "Evaluation","BD")
-    prediction_bipolar_file_path = here(output_dir,"prediction_bipolar.csv")
+    
+    score_filter=get_score_disease_gene_association()
+    prediction_bipolar_file_path =  here(output_dir, paste0("prediction_bipolar_score_filter_",score_filter,"_.csv"))
 
     if(!file.exists(prediction_bipolar_file_path)){
         cat("[WARN] Processed data not found. Running preparation first...\n")
-        prediction_bipolar = create_prediction_bipolar_data()
+        prediction_bipolar = create_prediction_disease_info("BD")
+    }
+    else{
+        prediction_bipolar = read.csv(prediction_bipolar_file_path)
+    }
+ 
+    if (sum(prediction_bipolar$validation_label) <= 0) {
+        cat("[WARN] Cannot plot ROC: No hits found in the ranking.\n")
+        return(NULL)
+    }
+   
+    output_roc_dir = here(output_dir,"ROC")
+    dir.create(output_roc_dir, recursive = TRUE, showWarnings = FALSE)
+    output_graph_file_name = "bipolar_roc_curve.pdf"
+    grDevices::pdf(here(output_roc_dir,output_graph_file_name), width = 6, height = 6)
+    
+    roc_results = reportROC::reportROC(
+         gold = prediction_bipolar$validation_label,
+         predictor = -1 * prediction_bipolar$average_rank,
+         plot = TRUE
+     )
+     grDevices::dev.off()
+     message(sprintf("[SUCCESS] ROC curve saved at: %s",here(output_dir, output_graph_file_name)))
+     Sys.sleep(1.5)
+
+}
+
+generate_roc_curve_disease = function(disease = c("MDD","BD")){
+    disease = match.arg(disease)
+    output_dir = here("src", "Evaluation",disease)
+    file_prefix = ifelse(disease == "MDD", "mdd", "bipolar")
+    prediction_file_path = here(output_dir,"prediction_bipolar.csv")
+
+    if(!file.exists(prediction_bipolar_file_path)){
+        cat("[WARN] Processed data not found. Running preparation first...\n")
+        prediction_bipolar = create_prediction_disease_info("BD")()
     }
     else{
         prediction_bipolar = read.csv(prediction_bipolar_file_path)
@@ -305,7 +266,7 @@ generate_recall_k_bipolar = function(){
 
     if(!file.exists(prediction_bipolar_file_path)){
         cat("[WARN] Processed data not found. Running preparation first...\n")
-        prediction_data = create_prediction_bipolar_data()
+        prediction_data = create_prediction_disease_info("BD")()
     }
     else{
         prediction_data = read.csv(prediction_bipolar_file_path) 
@@ -352,19 +313,21 @@ generate_recall_k_bipolar = function(){
     message(sprintf("[SUCCESS] Recall@K graph saved at: %s",here(output_recall_dir,"recall_at_k_bipolar.pdf")))
     Sys.sleep(1.5)
 }
-
-
 create_top_drugs_file= function(disease = c("MDD", "BD"),n=10){
     disease = match.arg(disease)
+
     output_dir = here("src", "Evaluation",disease)
-    prediction_disease_file_path = here(output_dir,paste0("prediction_",tolower(disease),".csv"))
+    file_suffixes   = c("MDD" = "mdd", "BD" = "bipolar")
+    file_suffix   = file_suffixes[disease]
+    score_filter=get_score_disease_gene_association()
+    prediction_disease_file_path = here(output_dir, paste0("prediction_", file_suffix,"_score_filter_",score_filter,"_.csv"))
 
     if(file.exists(prediction_disease_file_path)) {
         prediction_data = read.csv(prediction_disease_file_path) 
     }
     if(!file.exists(prediction_disease_file_path)) {
         cat("[WARN] Processed data not found. Running preparation first...\n")
-        prediction_data = created_prediction_mdd_data()
+        prediction_data = create_prediction_disease_info(disease)
     }
     drug_target_mapping  = load_drug_target_df()
     ppi_gene_nodes= get_ppi_nodes()
@@ -373,8 +336,64 @@ create_top_drugs_file= function(disease = c("MDD", "BD"),n=10){
         dplyr::rowwise()%>%
         dplyr::mutate(target_count = length(get_drug_targets(drugbank_id,ppi_gene_nodes,drug_target_mapping))) %>%
         dplyr::ungroup()
-    output_file_name= here(output_dir,paste0("top_",n,"_drugs_",disease,".csv"))
+    
+    output_file_name= here(output_dir,paste0("top_",n,"_drugs_",disease,"_score_filter_",score_filter,"_.csv"))
     write.csv(top_n_drugs,output_file_name,row.names = FALSE)
     message(sprintf("[SUCCESS] Top Drug file  saved at: %s",output_file_name))
 
+}
+
+create_prediction_disease_info = function(disease = c("MDD", "BD")) {
+    disease = match.arg(disease)
+
+    repodb_prefixes = c("MDD" = "MDD", "BD" = "BIPOLAR")
+    file_suffixes   = c("MDD" = "mdd", "BD" = "bipolar")
+    
+    repodb_prefix = repodb_prefixes[disease]
+    file_suffix   = file_suffixes[disease]
+
+    rank_file_path   = here("src", "Data", "Drug", "Score", disease, "average_kernel_rank.csv")
+    repodb_file_path = here("src", "Data", "REPODB", paste0(repodb_prefix, "_REPODB.tsv"))
+    output_dir       = here("src", "Evaluation", disease)
+    score_filter = get_score_disease_gene_association()
+    output_file_path = here(output_dir, paste0("prediction_", file_suffix,"_score_filter_",score_filter,"_.csv"))
+
+    if (!file.exists(rank_file_path)) {
+        cat("[WARN] Average Rank file not found. Building first...\n")
+        drug_function_mapper[['1']]()
+        drug_function_mapper[['2']]()
+    }
+
+    drug_target_mapping = load_drug_target_df()
+    gold_standard = read_tsv(repodb_file_path, show_col_types = FALSE)    
+    gold_standard = gold_standard %>%  
+        dplyr::semi_join(drug_target_mapping, by = 'drugbank_id')
+ 
+    cat(sprintf("[INFO] Total valid drugs in RepoDB (Gold Standard): %d\n", nrow(gold_standard)))
+    
+    prediction_info = read.csv(rank_file_path)
+    processed_predictions = prediction_info %>% 
+        dplyr::mutate(
+            validation_label = ifelse(drugbank_id %in% gold_standard$drugbank_id, 1, 0),
+            validation_status = factor(validation_label,
+                                       levels = c(0, 1),
+                                       labels = c("Not validated by RepoDB", "Validated by RepoDB"))
+        )
+
+    validated_hits = processed_predictions %>% dplyr::filter(validation_label == 1)
+    cat(sprintf("[INFO] Total predicted hits validated: %d\n", nrow(validated_hits)))
+    
+    if (nrow(validated_hits) <= 0) {
+         cat("[WARN] ROC curve unavailable: No validated drugs were predicted in the ranking.\n")
+         Sys.sleep(1.5)
+         return(NULL)
+    }
+
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+    write.csv(processed_predictions, file = output_file_path, row.names = FALSE)
+    message(sprintf("[SUCCESS] prediction file saved at: %s", output_file_path))
+    
+    create_top_drugs_file(disease, 20)
+    
+    invisible(processed_predictions)
 }
