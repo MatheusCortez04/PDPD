@@ -185,7 +185,7 @@ create_top_drugs_file= function(disease = c("MDD", "BD"),n=10){
         dplyr::ungroup()
     
     output_file_name= here(output_dir,paste0("top_",n,"_drugs_",disease,"_score_filter_",score_filter,"_.csv"))
-    top_n_drugs =top_n_drugs %>% dplyr::mutate(api_response = purrr::map(drugbank_id, get_chembl_from_dbid)) %>%
+    top_n_drugs =top_n_drugs %>% dplyr::mutate(api_response = purrr::map(drugbank_id, get_drug_info_from_dbid)) %>%
         tidyr::unnest_wider(api_response) %>%
         select(drugbank_id,chembl_id,drug_name,target_count,validation_status)
     write.csv(top_n_drugs,output_file_name,row.names = FALSE)
@@ -369,7 +369,7 @@ generate_recall_k = function(disease = c("MDD", "BD")) {
 
 get_drug_info_from_dbid = function(drugbank_id) {
     
-    message(sprintf("[REQUEST] get_chembl_from_dbid() | drugbank_id=%s", drugbank_id))
+    message(sprintf("[REQUEST] get_drug_info_from_dbid() | drugbank_id=%s", drugbank_id))
 
     endpoint = "https://api.platform.opentargets.org/api/v4/graphql"
     graphql_query = '
