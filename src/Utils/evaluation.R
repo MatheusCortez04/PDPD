@@ -1,6 +1,8 @@
 source(here("src","Utils","drug.R"))
 source(here("src","Utils","utils.R"))
-
+library(tidyr)
+library(purrr)
+library(httr2)
 evaluation_menu = function(){
   while(TRUE){
     clear_console()
@@ -23,15 +25,19 @@ evaluation_menu = function(){
 evaluation_function_mapper = list(
     '1' = function() {
         generate_roc_curve("MDD")
+        create_top_drugs_file("MDD", 10)
     },
     '2' = function(){
          generate_recall_k("MDD")
+         create_top_drugs_file("MDD", 10)
     },
     '3'= function(){
        generate_roc_curve("BD")
+       create_top_drugs_file("BD", 10)
     },
     '4'= function(){
         generate_recall_k("BD")
+        create_top_drugs_file("BD", 10)
     },
     '5'= function(){
         generate_roc_to_kernel()
@@ -179,6 +185,9 @@ create_top_drugs_file= function(disease = c("MDD", "BD"),n=10){
         dplyr::ungroup()
     
     output_file_name= here(output_dir,paste0("top_",n,"_drugs_",disease,"_score_filter_",score_filter,"_.csv"))
+    top_n_drugs =top_n_drugs %>% dplyr::mutate(api_response = purrr::map(drugbank_id, get_chembl_from_dbid)) %>%
+        tidyr::unnest_wider(api_response) %>%
+        select(drugbank_id,chembl_id,drug_name,target_count,validation_status)
     write.csv(top_n_drugs,output_file_name,row.names = FALSE)
     message(sprintf("[SUCCESS] Top Drug file  saved at: %s",output_file_name))
 
@@ -234,7 +243,6 @@ create_prediction_disease_info = function(disease = c("MDD", "BD")) {
     write.csv(processed_predictions, file = output_file_path, row.names = FALSE)
     message(sprintf("[SUCCESS] prediction file saved at: %s", output_file_path))
     
-    create_top_drugs_file(disease, 20)
     
     invisible(processed_predictions)
 }
@@ -356,4 +364,51 @@ generate_recall_k = function(disease = c("MDD", "BD")) {
     
     Sys.sleep(1.5)
     invisible(recall_df)
+}
+
+
+get_drug_info_from_dbid = function(drugbank_id) {
+    
+    message(sprintf("[REQUEST] get_chembl_from_dbid() | drugbank_id=%s", drugbank_id))
+
+    endpoint = "https://api.platform.opentargets.org/api/v4/graphql"
+    graphql_query = '
+        query search($queryString: String!) {
+            search(queryString: $queryString, entityNames: ["drug"]) {
+                hits {
+                    id,
+                    name
+                }
+            }
+        }'
+    message("[INFO] Sending search request to OpenTargets...")
+    response = httr2::request(endpoint) %>%
+                httr2::req_body_json(
+                    list(query=graphql_query,
+                        variables = list(queryString = drugbank_id)))%>%
+                        httr2::req_headers("Content-Type" = "application/json") %>%
+                        httr2::req_perform()
+
+
+    status <- httr2::resp_status(response)
+    message(sprintf("[INFO] HTTP status = %s", status))
+    data = response %>%resp_body_json() 
+
+    if (status >= 400) {
+        message("[ERROR] Failed to retrieve ChEMBL ID from OpenTargets search.")
+        return(list(chembl_id = NA, name = NA))
+    }
+
+    hits = purrr::pluck(data, "data", "search", "hits") %>% purrr::flatten()
+    if (is.null(hits) || length(hits) == 0) {
+        message("[WARN] No ChEMBL hits found for this DrugBank ID.")
+        return(list(chembl_id = NA, name = NA))
+    }
+    chembl_id = hits$id
+    message(sprintf("[INFO] Found ChEMBL ID(s) for %s: %s",drugbank_id, paste(chembl_id, collapse = ", ")))
+    drug = list(
+        chembl_id = hits$id,
+        drug_name = hits$name
+    )
+    invisible(drug)
 }
