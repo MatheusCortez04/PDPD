@@ -15,7 +15,8 @@ evaluation_menu = function(){
     cat(" [2] Generate MDD Recall@K \n")
     cat(" [3] Generate BD ROC \n")
     cat(" [4] Generate BD Recall@K \n")
-    cat(" [5] Generate Kernel Roc \n")
+    cat(" [5] Generate Top n drug rank to MDD \n")
+    cat(" [6] Generate Top n drug rank to BD \n")
     cat(" [B] Back\n\n")
 
     input = readline(prompt = "Choice option: ")
@@ -44,73 +45,14 @@ evaluation_function_mapper = list(
        create_top_drugs_file("BD",20)
     },
     '5'= function(){
-       generate_roc_to_kernel()
+        n = readline(prompt = "Enter n value  to generate drug rank (Default 10): ")
+        create_top_drugs_file("MDD", as.integer(n))
+    },
+    '6'= function(){
+        n = readline(prompt = "Enter n value  to generate drug rank (Default 10): ")
+        create_top_drugs_file("BD", as.integer(n))
     }
 )
-
-generate_roc_to_kernel = function(){
-    diseases = c("MDD","BD")
-    drug_score_dir =here("src","Data","Drug","Score")
-     
-    
-    kernel_names = c(
-        "diffusion_kernel","pstep_kernel","regularised_laplacian_kernel",
-        "commute_time_kernel","inverse_cosine_kernel"
-    )
-    for(disease in diseases){
-        gold_standard_file_path = here("src","Data","REPODB",paste0(disease,"_REPODB.tsv"))
-        if (!file.exists(gold_standard_file_path)) {
-            cat("[WARN] Drug Score to kernel:",kernel,"and disease:",disease,"\n")
-            next()
-            }
-        gold_standard = read_tsv(gold_standard_file_path, show_col_types = FALSE)   
-        for(kernel in kernel_names){
-            input_file_path =here(drug_score_dir,disease,paste0(kernel,".csv")) 
-            if (!file.exists(input_file_path)) {
-                cat("[WARN] not found gold standard file to disease:",disease,"\n")
-                next()
-            }
-            drug_score_kernel = read.csv(input_file_path)
-            gold_standard = gold_standard %>%  dplyr::semi_join(drug_score_kernel,by='drugbank_id')
-
-            kernel_predictions = drug_score_kernel %>% 
-                dplyr::mutate(
-                    validation_label =  ifelse(drugbank_id %in% gold_standard$drugbank_id, 1, 0),
-                    validation_status = factor(validation_label,
-                                             levels = c(0, 1),
-                                             labels = c("Not validated by RepoDB", "Validated by RepoDB"))
-            )
-
-                validated_hits = kernel_predictions %>% filter(validation_label==1)
-                cat(sprintf("[INFO] Total predicted hits validated: %d\n",nrow(validated_hits)))
-                if (nrow(validated_hits) <= 0) {
-                    cat("[WARN] ROC curve unavailable: No validated drugs were predicted in the ranking.\n")
-                    Sys.sleep(1.5)
-                    return(NULL)
-                }
-                output_roc_dir = here("src","Evaluation",disease,"ROC","KERNEL")
-                output_graph_file_name = paste0(kernel,"_roc_curve.pdf")
-                create_dir(output_roc_dir)
-
-                grDevices::pdf(here(output_roc_dir,output_graph_file_name), width = 6, height = 6)
-                roc_results = reportROC::reportROC(
-                    gold = kernel_predictions$validation_label,
-                    predictor =kernel_predictions$score,
-                    plot = TRUE)
-
-                
-                grDevices::dev.off()
-                message(sprintf("[SUCCESS] ROC curve saved at: %s",here(output_roc_dir, output_graph_file_name)))
-                Sys.sleep(1.5)
-
-
-
-        }
-    }
-
-
-
-}
 create_top_drugs_file= function(disease = c("MDD", "BD"),n=10){
     disease = match.arg(disease)
 
