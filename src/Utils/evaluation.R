@@ -137,10 +137,16 @@ create_top_drugs_file= function(disease = c("MDD", "BD"),n=10){
         dplyr::mutate(api_response = purrr::map(drugbank_id, get_drug_info_from_dbid)) %>%
         tidyr::unnest_wider(api_response) %>%
         dplyr::select(drugbank_id,chembl_id,drug_name,target_count,validation_status)
-        
+    
+    drug_candidates <- get_drug_candidates(disease)
+    top_n_joined = top_n_drugs %>% 
+        dplyr::left_join(
+            drug_candidates, 
+            by = c("chembl_id" = "drug_id"),
+        )
     
     output_file_name= here(output_dir,paste0("top_",n,"_drugs_",disease,"_score_filter_",score_filter,"_.csv"))
-    write.csv(top_n_drugs,output_file_name,row.names = FALSE)
+    write.csv(top_n_joined,output_file_name,row.names = FALSE)
     message(sprintf("[SUCCESS] Top Drug file  saved at: %s",output_file_name))
             Sys.sleep(1.5)
 }
@@ -388,4 +394,90 @@ get_drug_info_from_dbid = function(drugbank_id) {
         drug_name = hits$name
     )
     invisible(drug)
+}
+
+
+get_drug_candidates = function(disease = c("MDD", "BD")){
+
+    clinical_stage_map = c(
+    "PRECLINICAL" = 0,
+    "PHASE_1" = 1,
+    "PHASE_1_2" = 1.5,
+    "PHASE_2" = 2,
+    "PHASE_2_3" = 2.5,
+    "PHASE_3" = 3,
+    "PHASE_4" = 4,
+    "APPROVED" = 5,
+    "WITHDRAWN" = -1
+)
+    disease = match.arg(disease)
+    disease_ids = c("MDD" = "MONDO_0002009", "BD" = "MONDO_0004985")
+
+    endpoint = "https://api.platform.opentargets.org/api/v4/graphql"
+
+    query = 'query drugsQuery($efoId: String!) {
+                  disease(efoId: $efoId) {
+                    name
+                    drugAndClinicalCandidates {
+                      count
+                      rows {
+                        id
+                        maxClinicalStage
+                        drug {
+                          id
+                          name
+                        }
+                        clinicalReports {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }'
+
+    response = httr2::request(endpoint) %>%
+        httr2::req_body_json(
+            list(
+                query = query,
+                variables = list(efoId = disease_ids[disease])
+            )
+        ) %>%
+        httr2::req_perform()
+
+    data = response %>% resp_body_json()
+    rows = purrr::pluck(
+        data,
+        "data",
+        "disease",
+        "drugAndClinicalCandidates",
+        "rows"
+    )
+    if(is.null(rows) || length(rows) == 0){
+        return(NA)
+    }
+
+    parsed_data <- purrr::map_dfr(rows, function(indication_drug) {
+    tibble::tibble(
+      drug_id = indication_drug$drug$id %||% NA_character_,
+      max_clinical_stage_open_targets = factor(
+        indication_drug$maxClinicalStage,
+        levels = c(
+        "PRECLINICAL",
+        "PHASE_1",
+        "PHASE_1_2",
+        "PHASE_2",
+        "PHASE_2_3",
+        "PHASE_3",
+        "PHASE_4",
+        "APPROVAL"
+        )
+      )
+    )
+  })%>%
+    dplyr::distinct() %>%
+    dplyr::arrange(desc(max_clinical_stage_open_targets)) 
+    write.csv(parsed_data,'tesst.csv')
+    return(parsed_data)
+
+
 }
