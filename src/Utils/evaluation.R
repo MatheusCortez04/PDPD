@@ -30,19 +30,16 @@ evaluation_menu = function(){
 evaluation_function_mapper = list(
     '1' = function() {
         generate_roc_curve("MDD")
-        create_top_drugs_file("MDD",20)
     },
     '2' = function(){
          generate_recall_k("MDD")
-         create_top_drugs_file("MDD",20)
+
     },
     '3'= function(){
        generate_roc_curve("BD")
-       create_top_drugs_file("BD",20)
     },
     '4'= function(){
        generate_recall_k("BD")
-       create_top_drugs_file("BD",20)
     },
     '5'= function(){
         n = readline(prompt = "Enter n value  to generate drug rank (Default 10): ")
@@ -112,7 +109,7 @@ create_prediction_disease_info = function(disease = c("MDD", "BD")) {
         show_col_types = FALSE
     )    
 
-    gold_standard = gold_standard %>%  
+    gold_standard = gold_standard %>%
         dplyr::semi_join(drug_target_mapping, by = 'drugbank_id') 
 
     cat(sprintf("[INFO] Total valid drugs in RepoDB (Gold Standard) for %s: %d\n", disease, nrow(gold_standard)))
@@ -267,15 +264,12 @@ generate_roc_curve = function(disease = c("MDD", "BD")) {
         return(NULL)
     }
 
-    # Prepara o diretório de saída
     output_roc_dir = here(output_dir, "ROC")
     create_dir(output_roc_dir)
 
-    # Nomenclatura dinâmica do gráfico
     output_graph_file_name = paste0(file_suffix, "_score_filter_", score_filter, "_roc_curve.pdf")
     output_path = here(output_roc_dir, output_graph_file_name)
 
-    # Geração e salvamento do gráfico
     grDevices::pdf(output_path, width = 6, height = 6)
     
     roc_results = reportROC::reportROC(
@@ -418,7 +412,6 @@ get_drug_candidates = function(disease = c("MDD", "BD")){
   })%>%
     dplyr::distinct() %>%
     dplyr::arrange(desc(max_clinical_stage_open_targets)) 
-    write.csv(parsed_data,'tesst.csv')
     return(parsed_data)
 
 
