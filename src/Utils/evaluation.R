@@ -441,8 +441,7 @@ get_drug_candidates = function(disease = c("MDD", "BD")){
     )
   })%>%
     dplyr::distinct() %>%
-    dplyr::arrange(desc(max_clinical_stage_open_targets)) 
-    write.csv(parsed_data,'tesst.csv')
+    dplyr::arrange(desc(max_clinical_stage_open_targets))
     return(parsed_data)
 
 
