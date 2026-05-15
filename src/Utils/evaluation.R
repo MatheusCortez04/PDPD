@@ -135,8 +135,20 @@ create_top_drugs_file= function(disease = c("MDD", "BD"),n=10){
             drug_candidates, 
             by = c("chembl_id" = "drug_id"),
         )
+
+        approval_drugs = top_n_joined %>% filter(max_clinical_stage_open_targets=='APPROVAL')
+        approval_drugs_final = approval_drugs %>%
+            mutate(report_info = purrr::map(clinical_report_id, get_clinical_report_data)) %>%
+                tidyr::unnest(report_info, names_sep = "_") %>% select(clinical_report_id,report_info_source,report_info_url,report_info_evidence_summary)
+        glimpse(approval_drugs_final)
+        top_n_joined = top_n_joined %>% dplyr::left_join(
+            approval_drugs_final, 
+            by = 'clinical_report_id',
+        )
+   
+
         
-        output_file_name= here(output_dir,paste0("top_",n,"_drugs_",disease,"_score_filter_",score_filter,"_.csv"))
+    output_file_name= here(output_dir,paste0("top_",n,"_drugs_",disease,"_score_filter_",score_filter,"_.csv"))
 
     write.csv(top_n_joined,output_file_name,row.names = FALSE)
     message(sprintf("[SUCCESS] Top Drug file  saved at: %s",output_file_name))
@@ -422,28 +434,63 @@ get_drug_candidates = function(disease = c("MDD", "BD")){
         return(NA)
     }
 
-    parsed_data <- purrr::map_dfr(rows, function(indication_drug) {
+    parsed_data = purrr::map_dfr(rows, function(indication_drug) {
+    first_report_id = ifelse(length(indication_drug$clinicalReports) > 0, 
+                         indication_drug$clinicalReports[[1]]$id,NA_character_)
     tibble::tibble(
-      drug_id = indication_drug$drug$id %||% NA_character_,
-      max_clinical_stage_open_targets = factor(
-        indication_drug$maxClinicalStage,
-        levels = c(
-        "PRECLINICAL",
-        "PHASE_1",
-        "PHASE_1_2",
-        "PHASE_2",
-        "PHASE_2_3",
-        "PHASE_3",
-        "PHASE_4",
-        "APPROVAL"
-        )
-      )
+        drug_id = indication_drug$drug$id %||% NA_character_,
+        clinical_report_id = first_report_id,
+        max_clinical_stage_open_targets = factor(
+            indication_drug$maxClinicalStage,
+                levels = c(
+                "PRECLINICAL",
+                "PHASE_1",
+                "PHASE_1_2",
+                "PHASE_2",
+                "PHASE_2_3",
+                "PHASE_3",
+                "PHASE_4",
+                "APPROVAL"
+                )
+            ),
     )
   })%>%
     dplyr::distinct() %>%
     dplyr::arrange(desc(max_clinical_stage_open_targets))
     return(parsed_data)
+}
 
 
+get_clinical_report_data= function(clinicalReportId){
+    endpoint = "https://api.platform.opentargets.org/api/v4/graphql"
+    query = 'query RecordDetailQuery($clinicalReportId: String!) {
+                clinicalReport(clinicalReportId: $clinicalReportId) {
+                    id
+                    title
+                    clinicalStage
+                    source
+                    url
+                }
+            }'
+
+        response = httr2::request(endpoint) %>%
+        httr2::req_body_json(
+            list(
+                query = query,
+                variables = list(clinicalReportId =clinicalReportId)
+            )
+        ) %>%
+        httr2::req_perform()
+
+    data = response %>% resp_body_json()
+    report = data$data$clinicalReport
+    if(is.null(report)) return(NULL)
+    validacao_str = sprintf("%s (%s)", report$source, report$url)
+    return(tibble(
+        clinical_report_id = clinicalReportId,
+        source = report$source,
+        url = report$url,
+        evidence_summary = validacao_str
+    ))
 }
 
