@@ -9,7 +9,7 @@ is_valid_input_boolean = function(input){
 }
 
 get_ppi_nodes = function(){
-    ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
+    ppi_df  = get_ppi_dataframe()
     proteinA_entrezid = ppi_df$proteinA_entrezid
     proteinB_entrezid = ppi_df$proteinB_entrezid
     all_protein_in_ppi_df = c(proteinA_entrezid,proteinB_entrezid)
@@ -96,4 +96,10 @@ get_common_gene = function(){
     distinct(entrez_id) %>%
     mutate(entrez_id= as.character(entrez_id)) %>% pull(entrez_id)
   return(common_genes)
+}
+
+get_ppi_dataframe = function(){
+  ppi_df =read.csv(here("src","Data","PPI_gysi.csv"), sep=",") %>% dplyr::distinct()
+
+  return(ppi_df)
 }
