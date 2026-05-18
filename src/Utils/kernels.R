@@ -179,7 +179,7 @@ validate_kernel_input = function(input){
 }
 
 generate_kernel_menu <- function() {
-    ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
+    ppi_df  =get_ppi_dataframe()
     cat("PPI reading complete.\n")
     cat("Creating dataframe with only proteins\n")
     ppi_only_proteins_df =  ppi_df %>% select(proteinA_entrezid,proteinB_entrezid)

@@ -10,7 +10,7 @@ is_valid_input_boolean = function(input){
 
 
 get_ppi_nodes = function(){
-    ppi_df  = read.csv(here("src","Data","PPI_gysi.csv"), sep=",")
+    ppi_df  = get_ppi_dataframe()
     cat("PPI  file reading complete.\n")
     proteinA_entrezid = ppi_df$proteinA_entrezid
     proteinB_entrezid = ppi_df$proteinB_entrezid
@@ -56,12 +56,12 @@ get_disease_genes = function(disease = c("MDD", "BD")) {
     "BD"  = "C0005586"
   )
   target_disease_id = disease_ids[disease]
-  
+  valid_genes = get_ppi_nodes()
   score_filter = get_score_disease_gene_association()
   disease_gene_df = read.csv(here("src", "Data", "Disease", "disease_genes.csv"))
   
   disease_gene_df = disease_gene_df %>%
-    dplyr::filter(diseaseid == target_disease_id & score >= score_filter) %>%
+    dplyr::filter(diseaseid == target_disease_id & score >= score_filter,geneid %in%valid_genes) %>%
     dplyr::rename(gene_id = geneid, disease_id = diseaseid) %>% 
     dplyr::select(gene_id, disease_id, score)
   
@@ -98,4 +98,11 @@ build_protein_disease_df = function(disease = c("MDD", "BD")) {
   save(disease_vector, file = output_file_path_rdata)
   
   invisible(disease_vector)
+}
+
+
+get_ppi_dataframe = function(){
+  ppi_df = read.csv(here("src","Data","PPI_gysi.csv"), sep=",") %>% distinct()
+
+  return(ppi_df)
 }
