@@ -88,3 +88,12 @@ get_score_disease_gene_association = function(){
   score_filter =  0.6
   invisible(score_filter)
 }
+
+get_common_gene = function(){
+  mdd_disease_genes =get_mdd_disease_module()
+  bipolar_disease_genes = get_bipolar_disease_module()
+  common_genes = mdd_disease_genes %>% dplyr::semi_join(bipolar_disease_genes,by='entrez_id') %>% 
+    distinct(entrez_id) %>%
+    mutate(entrez_id= as.character(entrez_id)) %>% pull(entrez_id)
+  return(common_genes)
+}
