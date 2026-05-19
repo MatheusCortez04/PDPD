@@ -5,6 +5,7 @@ library(tidyverse)
 source(here("src","Utils","kernels.R"))
 source(here("src","Utils","drug.R"))
 source(here("src","Utils","evaluation.R"))
+source(here("src","Utils","graph.R"))
 main= function(){
 
     cat("\nLibraries loaded successfully.\n")

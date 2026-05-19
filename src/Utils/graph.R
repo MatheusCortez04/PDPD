@@ -51,14 +51,18 @@ get_lcc_vertices= function(graph){
 
 
 get_disease_subgraph  = function(disease=c('MDD','BD')){
-  disease = match.arg(disease)
-  cat(sprintf("[INFO] Extracting disease subgraph for: %s\n", disease))
+    disease = match.arg(disease)
+    cat(sprintf("[INFO] Extracting disease subgraph for: %s\n", disease))
+    disease_data <- list(
+        MDD = list(name = "MDD", genes = get_mdd_disease_module()$entrez_id),
+        BD = list(name = "BD", genes = get_bipolar_disease_module()$entrez_id)
+    )
   ppi_df = get_ppi_dataframe()
   global_graph = generate_graph_from_dataframe(ppi_df)
   lcc_global = get_lcc_vertices(global_graph)
     
-  disease_genes_df = get_disease_genes(disease)
-  disease_genes_in_lcc = intersect(lcc_global, disease_genes_df$gene_id)
+  disease_genes_df = disease_data[[disease]]$genes
+  disease_genes_in_lcc = intersect(lcc_global, disease_genes_df)
   
   disease_subgraph = igraph::induced_subgraph(global_graph, vids = disease_genes_in_lcc)
   disease_subgraph = igraph::simplify(disease_subgraph, remove.multiple = TRUE, remove.loops = TRUE)
