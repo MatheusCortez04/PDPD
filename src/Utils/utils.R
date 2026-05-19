@@ -106,3 +106,12 @@ get_ppi_dataframe = function(){
 
   return(ppi_df)
 }
+
+get_common_gene = function(){
+  mdd_disease_genes =get_disease_genes("MDD")
+  bipolar_disease_genes = get_disease_genes("BD")
+  common_genes = mdd_disease_genes %>% dplyr::semi_join(bipolar_disease_genes,by='gene_id') %>% 
+    distinct(gene_id) %>%
+    mutate(gene_id= as.character(gene_id)) %>% pull(gene_id)
+  return(common_genes)
+}
