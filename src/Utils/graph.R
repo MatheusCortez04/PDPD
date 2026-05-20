@@ -72,8 +72,8 @@ get_disease_subgraph  = function(disease=c('MDD','BD')){
 plot_lcc = function(disease=c('MDD','BD')){
   set.seed(10)
   disease = match.arg(disease)
-  graph_name= c("MDD" = "Network Module Analysis - Major Depressive Disorder Subgraph",
-                "BD" ="Network Module Analysis - Bipolar Disorder Subgraph")
+  graph_name= c("MDD" = "Disease Module Analysis - Major Depressive Disorder Subgraph",
+                "BD" ="Disease Module Analysis - Bipolar Disorder Subgraph")
   
   output_graph_dir= here('src','Graph',disease)
   disease_subgraph = get_disease_subgraph(disease)
@@ -126,8 +126,8 @@ plot_lcc = function(disease=c('MDD','BD')){
   "topleft",
   legend = c(
       sprintf("Common Genes (%d | %.1f%%)", common_in_network, common_percent),
-      sprintf("LCC Exclusive (%d | %.1f%%)", lcc_exclusive_count, lcc_percent),
-      sprintf("Other Nodes (%d | %.1f%%)", non_lcc_count, non_lcc_percent)
+      sprintf("LCC Exclusive Genes (%d | %.1f%%)", lcc_exclusive_count, lcc_percent),
+      sprintf("Other Genes (%d | %.1f%%)", non_lcc_count, non_lcc_percent)
   ),
   col = c('royalblue', 'tomato', "gray70"),
   pch = 19,
