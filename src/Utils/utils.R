@@ -62,8 +62,8 @@ get_disease_genes = function(disease = c("MDD", "BD")) {
   
   disease_gene_df = disease_gene_df %>%
     dplyr::filter(diseaseid == target_disease_id & score >= score_filter,geneid %in%valid_genes) %>%
-    dplyr::rename(gene_id = geneid, disease_id = diseaseid) %>% 
-    dplyr::select(gene_id, disease_id, score)
+    dplyr::rename(entrez_id = geneid, disease_id = diseaseid) %>% 
+    dplyr::select(entrez_id, disease_id, score)
   
   invisible(disease_gene_df)
 }
@@ -77,10 +77,10 @@ build_protein_disease_df = function(disease = c("MDD", "BD")) {
 
   cat(paste0("Creating ", disease, " protein DataFrame....\n"))
   
-  disease_vector = data.frame(gene_id = all_proteins)
+  disease_vector = data.frame(entrez_id = all_proteins)
   disease_vector = disease_vector %>% 
     dplyr::mutate(
-      is_disease = ifelse(gene_id %in% disease_genes$gene_id, 1, 0)
+      is_disease = ifelse(entrez_id %in% disease_genes$entrez_id, 1, 0)
     )
 
   file_prefix = ifelse(disease == "MDD", "mdd", "bipolar")
@@ -110,8 +110,8 @@ get_ppi_dataframe = function(){
 get_common_gene = function(){
   mdd_disease_genes =get_disease_genes("MDD")
   bipolar_disease_genes = get_disease_genes("BD")
-  common_genes = mdd_disease_genes %>% dplyr::semi_join(bipolar_disease_genes,by='gene_id') %>% 
-    distinct(gene_id) %>%
-    mutate(gene_id= as.character(gene_id)) %>% pull(gene_id)
+  common_genes = mdd_disease_genes %>% dplyr::semi_join(bipolar_disease_genes,by='entrez_id') %>% 
+    distinct(entrez_id) %>%
+    mutate(entrez_id= as.character(entrez_id)) %>% pull(entrez_id)
   return(common_genes)
 }
