@@ -68,8 +68,8 @@ get_disease_subgraph  = function(disease=c('MDD','BD')){
 plot_lcc = function(disease=c('MDD','BD')){
   set.seed(10)
   disease = match.arg(disease)
-  graph_name= c("MDD" = "Network Module Analysis - Major Depressive Disorder Subgraph",
-                "BD" ="Network Module Analysis - Bipolar Disorder Subgraph")
+  graph_name= c("MDD" = "Disease Module Analysis - Major Depressive Disorder Subgraph",
+                "BD" ="Disease Module Analysis - Bipolar Disorder Subgraph")
   
   output_graph_dir= here('src','Graph',disease)
   disease_subgraph = get_disease_subgraph(disease)
