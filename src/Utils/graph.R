@@ -58,7 +58,7 @@ get_disease_subgraph  = function(disease=c('MDD','BD')){
   lcc_global = get_lcc_vertices(global_graph)
     
   disease_genes_df = get_disease_genes(disease)
-  disease_genes_in_lcc = intersect(lcc_global, disease_genes_df$gene_id)
+  disease_genes_in_lcc = intersect(lcc_global, disease_genes_df$entrez_id)
   
   disease_subgraph = igraph::induced_subgraph(global_graph, vids = disease_genes_in_lcc)
   disease_subgraph = igraph::simplify(disease_subgraph, remove.multiple = TRUE, remove.loops = TRUE)
@@ -122,8 +122,8 @@ plot_lcc = function(disease=c('MDD','BD')){
   "topleft",
   legend = c(
       sprintf("Common Genes (%d | %.1f%%)", common_in_network, common_percent),
-      sprintf("LCC Exclusive (%d | %.1f%%)", lcc_exclusive_count, lcc_percent),
-      sprintf("Other Nodes (%d | %.1f%%)", non_lcc_count, non_lcc_percent)
+      sprintf("LCC Exclusive Genes (%d | %.1f%%)", lcc_exclusive_count, lcc_percent),
+      sprintf("Other Genes (%d | %.1f%%)", non_lcc_count, non_lcc_percent)
   ),
   col = c('royalblue', 'tomato', "gray70"),
   pch = 19,
