@@ -3,7 +3,7 @@ library(purrr)
 library(readr)
 source(here("src","Utils","utils.R"))
 
-generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,drug_nodes){
+generate_ordered_drug_protein_matrix = function(drug_target_df,ppi_genes,drugbank_ids){
   cat("\n--- Generating Drug Target Matrix ---\n")
     output_file_name="drug_target_matrix"
     drug_dir =here("src","Data","Drug")
@@ -14,7 +14,7 @@ generate_ordered_drug_protein_matrix = function(drug_target_df,protein_nodes,dru
     output_path_csv = here(drug_dir,paste0(output_file_name, ".csv"))
     output_path_rdata = here(drug_Rdata_dir,paste0(output_file_name, ".Rdata"))
 
-    matrix_drug_protein = build_drug_protein_matrix(drug_target_df,protein_nodes,drug_nodes)
+    matrix_drug_protein = build_drug_protein_matrix(drug_target_df,ppi_genes,drugbank_ids)
 
     write.csv(matrix_drug_protein, file =output_path_csv,row.names=FALSE)
     cat("Csv file  saved to:", output_path_csv, "\n")
@@ -45,11 +45,11 @@ scoring_drug_disease_menu = function(){
 drug_function_mapper = list(
     '1' = function() {
         cat("\n--- Generating and  Drug  Target Matrix  ---\n")
-        drug_target_df  = load_drug_target_df()
+        drug_target_df  = import_drug_targets_df()
         cat("Drug Target file reading complete.\n")
-        protein_nodes = get_ppi_nodes()
-        drug_nodes= get_drug_nodes(drug_target_df)
-        generate_ordered_drug_protein_matrix(drug_target_df,protein_nodes,drug_nodes)
+        ppi_genes = extract_ppi_genes()
+        drugbank_ids= extract_drugbank_ids()
+        generate_ordered_drug_protein_matrix(drug_target_df,ppi_genes,drugbank_ids)
     },
     '2' = function(){
         calculate_drug_score()
@@ -128,15 +128,15 @@ generate_drug_rank = function(disease = c("MDD", "BD")) {
     return(final_rank_df)
 }
 
-build_drug_protein_matrix= function(data_frame,protein_nodes,drug_nodes){
+build_drug_protein_matrix= function(data_frame,ppi_genes,drugbank_ids){
   data_frame %>%
-    filter(entrez_id %in% protein_nodes) %>%
+    filter(entrez_id %in% ppi_genes) %>%
     distinct(drugbank_id, entrez_id) %>%
     #O Value é utilizado para que cada iteração do dataframe original contenha o valor 1
     # e as demais lacunas sejam preenchidas com zero
     mutate(
-      drugbank_id = factor(drugbank_id, levels = drug_nodes),
-      entrez_id = factor(entrez_id, levels = protein_nodes),
+      drugbank_id = factor(drugbank_id, levels = drugbank_ids),
+      entrez_id = factor(entrez_id, levels = ppi_genes),
       value = 1
     ) %>%
     pivot_wider(
@@ -189,35 +189,36 @@ process_scores_for_disease = function(kernel,disease_info,drug_protein_matrix,ke
     invisible(score_df)
 }
 
-# COM A VALIDACAO ATUAL NÃO HÁ NENHUMA DROGA APROVADA PARA BIPOLARIDADE
-# O QUE GERA UM PDF VAZIO, VERIFICAR 
-
-load_drug_target_df = function(){
-    drug_target_file_path = here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv")
-    drug_target_file_already_exists = file.exists(drug_target_file_path)
-    if(!drug_target_file_already_exists){
-        cat("\n[Error]: Required file Drug target file not found.\n This file is necessary to calculate the score. Would you like to create it now\n")
-        Sys.sleep(1.5)
-        return()
+import_drug_targets_df = function(){
+    file_path =here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv")
+    if(!file.exists(file_path)){
+        stop(sprintf("\n[ERROR] Drug-target file not found:\n%s\nThis file is required for predictive calculations.",file_path))
     }
-    drug_target_df = read.csv(drug_target_file_path) %>% 
-        rename(drugbank_id=Drug,entrez_id=Target) %>%
-        dplyr::distinct(drugbank_id, entrez_id) %>%
+    valid_genes =extract_ppi_genes()
+    drug_target_df = read.csv(file_path,stringsAsFactors = FALSE) %>%
+        dplyr::rename(drugbank_id = Drug,entrez_id=Target) %>%
+        dplyr::filter(entrez_id %in%valid_genes)  %>%
+        dplyr::distinct(drugbank_id,entrez_id) %>%
         dplyr::mutate(entrez_id = as.character(entrez_id))
-    invisible(drug_target_df)
+
+    return(drug_target_df)
 }
 
-get_drug_targets = function(drugbank_id,ppi_gene_nodes,drug_target_df) {
+extract_drugbank_ids = function(){
+    drug_target_df  = import_drug_targets_df()
+    unique_drugbank_ids = drug_target_df %>%
+        dplyr::distinct(drugbank_id) %>%
+        dplyr::pull(drugbank_id)
 
-    drug_target_proteins = drug_target_df %>%
-        filter(drugbank_id == !!drugbank_id) %>%
-        distinct() %>%
-        dplyr::mutate(
-            drugbank_id = as.character(drugbank_id),
-            entrez_id   = as.character(entrez_id)) %>%
-        pull(entrez_id)
+    cat(sprintf("[INFO] Unique drugs in Drug-Target Dataframe: %d\n",length(unique_drugbank_ids)))
+    invisible(unique_drugbank_ids)
+}
 
-    drug_target_proteins = intersect(drug_target_proteins, ppi_gene_nodes)
-    invisible(drug_target_proteins)
+extract_targets_per_drug = function(input_drug_id, drug_target_df) {
+    valid_targets = drug_target_df %>%
+        dplyr::filter(drugbank_id == input_drug_id) %>%
+        dplyr::pull(entrez_id)
+    
+    return(valid_targets)
 }
 

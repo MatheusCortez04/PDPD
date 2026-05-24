@@ -1,8 +1,8 @@
 source(here("src","Utils","drug.R"))
 source(here("src","Utils","utils.R"))
+source(here("src","Utils","open_targets_requests.R"))
 library(tidyr)
 library(purrr)
-library(httr2)
 evaluation_menu = function(){
   while(TRUE){
     clear_console()
@@ -45,61 +45,6 @@ evaluation_function_mapper = list(
     }
 )
 
-generate_recall_k_MDD = function(){
-    output_dir = here("src", "Evaluation","MDD")
-    prediction_mdd_file_path = here(output_dir,"prediction_mdd.csv")
-
-    if(!file.exists(prediction_mdd_file_path)){
-        cat("[WARN] Processed data not found. Running preparation first...\n")
-        prediction_data = create_prediction_disease_info("MDD")()
-    }
-    else{
-        prediction_data = read.csv(prediction_mdd_file_path) 
-    }
-
-    total_hits_count = sum(prediction_data$validation_label)
-    if (total_hits_count == 0) {
-        cat("[WARN] No hits found for recall calculation.\n")
-        return(NULL)
-    }
-    recall_values = cumsum(prediction_data$validation_label) / total_hits_count
-
-    # #cumSum realiza a soma cumulariva e divide pelo total de verdadeiros positivos
-    # # recall = VP/VP+FN(neste caso nao tem FN a nao ser que seja inserido um valor de corte no rank)
-
-    recall_df = data.frame(
-        K = 1:nrow(prediction_data),
-        Recall = recall_values
-    )
-
-    recall_df$highlight <- ifelse(recall_df$K %% 50 == 0, TRUE, FALSE)
-        g = ggplot(recall_df, aes(x = K, y = Recall)) +
-        geom_line(size = 1) +
-        geom_point(
-            data = subset(recall_df, highlight == TRUE),
-            size = 3,
-            color = "red") +
-    geom_text(
-        data = subset(recall_df, highlight == TRUE),
-        aes(label = paste0("(", K, ", ", round(Recall, 3), ")")),
-        vjust = -0.7,
-        size = 3,
-        check_overlap=TRUE
-    )+
-    labs(
-        title = "Recall@K para MDD",
-        x = "K (Top-K)",
-        y = "Recall") +
-    theme_minimal(base_size = 14)
-
-    output_recall_dir= here(output_dir,"Recall")
-    dir.create(output_recall_dir, recursive = TRUE, showWarnings = FALSE)
-    pdf_path = here(output_recall_dir,"recall_at_k_MDD.pdf")
-    ggsave(pdf_path, plot = g, width = 8, height = 6)
-    message(sprintf("[SUCCESS] Recall@K graph saved at: %s",here(output_recall_dir,"recall_at_k_MDD.pdf")))
-    Sys.sleep(1.5)
-}
-
 create_top_drugs_file= function(disease = c("MDD", "BD"),n=10){
     disease = match.arg(disease)
 
@@ -116,13 +61,13 @@ create_top_drugs_file= function(disease = c("MDD", "BD"),n=10){
         cat("[WARN] Processed data not found. Running preparation first...\n")
         prediction_data = create_prediction_disease_info(disease)
     }
-    drug_target_mapping  = load_drug_target_df()
-    ppi_gene_nodes= get_ppi_nodes()
+    drug_target_mapping  = import_drug_targets_df()
+    ppi_gene_nodes= extract_ppi_genes()
 
     top_n_drugs= prediction_data %>% dplyr::slice_head(n=n) %>% 
         dplyr::select(drugbank_id,validation_status) %>%
         dplyr::rowwise()%>%
-        dplyr::mutate(target_count = length(get_drug_targets(drugbank_id,ppi_gene_nodes,drug_target_mapping))) %>%
+        dplyr::mutate(target_count = length(extract_targets_per_drug(drugbank_id,drug_target_mapping))) %>%
         dplyr::ungroup() %>%
         dplyr::mutate(api_response = purrr::map(drugbank_id, get_drug_info_from_dbid)) %>%
         tidyr::unnest_wider(api_response) %>%
@@ -176,7 +121,7 @@ create_prediction_disease_info = function(disease = c("MDD", "BD")) {
         drug_function_mapper[['2']]()
     }
 
-    drug_target_mapping = load_drug_target_df()
+    drug_target_mapping = import_drug_targets_df()
     gold_standard = read_tsv(repodb_file_path, show_col_types = FALSE)    
     gold_standard = gold_standard %>%  
         dplyr::semi_join(drug_target_mapping, by = 'drugbank_id')
@@ -326,171 +271,5 @@ generate_recall_k = function(disease = c("MDD", "BD")) {
     
     Sys.sleep(1.5)
     invisible(recall_df)
-}
-
-
-get_drug_info_from_dbid = function(drugbank_id) {
-    
-    message(sprintf("[REQUEST] get_drug_info_from_dbid() | drugbank_id=%s", drugbank_id))
-
-    endpoint = "https://api.platform.opentargets.org/api/v4/graphql"
-    graphql_query = '
-        query search($queryString: String!) {
-            search(queryString: $queryString, entityNames: ["drug"]) {
-                hits {
-                    id,
-                    name
-                }
-            }
-        }'
-    message("[INFO] Sending search request to OpenTargets...")
-    response = httr2::request(endpoint) %>%
-                httr2::req_body_json(
-                    list(query=graphql_query,
-                        variables = list(queryString = drugbank_id)))%>%
-                        httr2::req_headers("Content-Type" = "application/json") %>%
-                        httr2::req_perform()
-
-
-    status <- httr2::resp_status(response)
-    message(sprintf("[INFO] HTTP status = %s", status))
-    data = response %>%resp_body_json() 
-
-    if (status >= 400) {
-        message("[ERROR] Failed to retrieve ChEMBL ID from OpenTargets search.")
-        return(list(chembl_id = NA, name = NA))
-    }
-
-    hits = purrr::pluck(data, "data", "search", "hits") %>% purrr::flatten()
-    if (is.null(hits) || length(hits) == 0) {
-        message("[WARN] No ChEMBL hits found for this DrugBank ID.")
-        return(list(chembl_id = NA, name = NA))
-    }
-    chembl_id = hits$id
-    message(sprintf("[INFO] Found ChEMBL ID(s) for %s: %s",drugbank_id, paste(chembl_id, collapse = ", ")))
-    drug = list(
-        chembl_id = hits$id,
-        drug_name = hits$name
-    )
-    invisible(drug)
-}
-
-get_drug_candidates = function(disease = c("MDD", "BD")){
-
-    clinical_stage_map = c(
-    "PRECLINICAL" = 0,
-    "PHASE_1" = 1,
-    "PHASE_1_2" = 1.5,
-    "PHASE_2" = 2,
-    "PHASE_2_3" = 2.5,
-    "PHASE_3" = 3,
-    "PHASE_4" = 4,
-    "APPROVED" = 5,
-    "WITHDRAWN" = -1
-)
-    disease = match.arg(disease)
-    disease_ids = c("MDD" = "MONDO_0002009", "BD" = "MONDO_0004985")
-
-    endpoint = "https://api.platform.opentargets.org/api/v4/graphql"
-
-    query = 'query drugsQuery($efoId: String!) {
-                  disease(efoId: $efoId) {
-                    name
-                    drugAndClinicalCandidates {
-                      count
-                      rows {
-                        id
-                        maxClinicalStage
-                        drug {
-                          id
-                          name
-                        }
-                        clinicalReports {
-                          id
-                        }
-                      }
-                    }
-                  }
-                }'
-
-    response = httr2::request(endpoint) %>%
-        httr2::req_body_json(
-            list(
-                query = query,
-                variables = list(efoId = disease_ids[disease])
-            )
-        ) %>%
-        httr2::req_perform()
-
-    data = response %>% resp_body_json()
-    rows = purrr::pluck(
-        data,
-        "data",
-        "disease",
-        "drugAndClinicalCandidates",
-        "rows"
-    )
-    if(is.null(rows) || length(rows) == 0){
-        return(NA)
-    }
-
-    parsed_data = purrr::map_dfr(rows, function(indication_drug) {
-    first_report_id = ifelse(length(indication_drug$clinicalReports) > 0, 
-                         indication_drug$clinicalReports[[1]]$id,NA_character_)
-    tibble::tibble(
-        drug_id = indication_drug$drug$id %||% NA_character_,
-        clinical_report_id = first_report_id,
-        max_clinical_stage_open_targets = factor(
-            indication_drug$maxClinicalStage,
-                levels = c(
-                "PRECLINICAL",
-                "PHASE_1",
-                "PHASE_1_2",
-                "PHASE_2",
-                "PHASE_2_3",
-                "PHASE_3",
-                "PHASE_4",
-                "APPROVAL"
-                )
-            ),
-    )
-  })%>%
-    dplyr::distinct() %>%
-    dplyr::arrange(desc(max_clinical_stage_open_targets))
-    return(parsed_data)
-}
-
-
-get_clinical_report_data= function(clinicalReportId){
-    endpoint = "https://api.platform.opentargets.org/api/v4/graphql"
-    query = 'query RecordDetailQuery($clinicalReportId: String!) {
-                clinicalReport(clinicalReportId: $clinicalReportId) {
-                    id
-                    title
-                    clinicalStage
-                    source
-                    url
-                }
-            }'
-
-        response = httr2::request(endpoint) %>%
-        httr2::req_body_json(
-            list(
-                query = query,
-                variables = list(clinicalReportId =clinicalReportId)
-            )
-        ) %>%
-        httr2::req_perform()
-
-    data = response %>% resp_body_json()
-    report = data$data$clinicalReport
-    if(is.null(report)) return(NULL)
-    validacao_str = sprintf("%s (%s)", report$source, report$url)
-    return(tibble(
-        clinical_report_id = clinicalReportId,
-        source = report$source,
-        url = report$url,
-        evidence_summary = validacao_str
-    ))
 }
 
