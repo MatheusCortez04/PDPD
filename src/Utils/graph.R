@@ -57,7 +57,7 @@ get_disease_subgraph  = function(disease=c('MDD','BD')){
         MDD = list(name = "MDD", genes = get_mdd_disease_module()$entrez_id),
         BD = list(name = "BD", genes = get_bipolar_disease_module()$entrez_id)
     )
-  ppi_df = get_ppi_dataframe()
+  ppi_df = import_ppi_interactions()
   global_graph = generate_graph_from_dataframe(ppi_df)
   lcc_global = get_lcc_vertices(global_graph)
     
