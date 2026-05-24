@@ -53,7 +53,7 @@ get_lcc_vertices= function(graph){
 get_disease_subgraph  = function(disease=c('MDD','BD')){
   disease = match.arg(disease)
   cat(sprintf("[INFO] Extracting disease subgraph for: %s\n", disease))
-  ppi_df = get_ppi_dataframe()
+  ppi_df = import_ppi_interactions()
   global_graph = generate_graph_from_dataframe(ppi_df)
   lcc_global = get_lcc_vertices(global_graph)
     

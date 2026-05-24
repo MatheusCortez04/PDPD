@@ -8,18 +8,6 @@ is_valid_input_boolean = function(input){
     return(toupper(input) == 'TRUE' || toupper(input) == 'FALSE')
 }
 
-
-get_ppi_nodes = function(){
-    ppi_df  = get_ppi_dataframe()
-    cat("PPI  file reading complete.\n")
-    proteinA_entrezid = ppi_df$proteinA_entrezid
-    proteinB_entrezid = ppi_df$proteinB_entrezid
-    all_protein_in_ppi_df = c(proteinA_entrezid,proteinB_entrezid)
-    print(paste("All proteins in PPI Dataframe: ",length(all_protein_in_ppi_df)))
-    unique_ordered_proteins_in_ppi_df = unique(all_protein_in_ppi_df)
-    print(paste("Unique proteins in PPI Dataframe: ",length(unique_ordered_proteins_in_ppi_df)))
-    invisible(unique_ordered_proteins_in_ppi_df)
-}
 get_drug_nodes = function(drug_target_df){
     drug_ids = drug_target_df$drugbank_id
     print(paste("All drugs in Drug to target Dataframe: ",length(drug_ids)))
@@ -56,7 +44,7 @@ get_disease_genes = function(disease = c("MDD", "BD")) {
     "BD"  = "C0005586"
   )
   target_disease_id = disease_ids[disease]
-  valid_genes = get_ppi_nodes()
+  valid_genes = extract_ppi_genes()
   score_filter = get_score_disease_gene_association()
   disease_gene_df = read.csv(here("src", "Data", "Disease", "disease_genes.csv"))
   
@@ -71,7 +59,7 @@ get_disease_genes = function(disease = c("MDD", "BD")) {
 build_protein_disease_df = function(disease = c("MDD", "BD")) {
   disease = match.arg(disease)
   
-  all_proteins = get_ppi_nodes()
+  all_proteins = extract_ppi_genes()
   disease_genes = get_disease_genes(disease)
   
 
@@ -100,13 +88,6 @@ build_protein_disease_df = function(disease = c("MDD", "BD")) {
   invisible(disease_vector)
 }
 
-
-get_ppi_dataframe = function(){
-  ppi_df = read.csv(here("src","Data","PPI_gysi.csv"), sep=",") %>% distinct()
-
-  return(ppi_df)
-}
-
 get_common_gene = function(){
   mdd_disease_genes =get_disease_genes("MDD")
   bipolar_disease_genes = get_disease_genes("BD")
@@ -114,4 +95,24 @@ get_common_gene = function(){
     distinct(entrez_id) %>%
     mutate(entrez_id= as.character(entrez_id)) %>% pull(entrez_id)
   return(common_genes)
+}
+
+import_ppi_interactions = function(){
+    file_path=here("src","Data","PPI_gysi.csv")
+    if(!file.exists(file_path)){
+      stop(sprintf("[ERROR] Required PPI file not found:\n%s
+        \nPlease verify the file path or generate the interaction dataset before running the pipeline.",
+        file_path))
+    }
+    ppi_df = read.csv(file_path,stringsAsFactors = FALSE) %>%
+      dplyr::distinct()
+
+    return(ppi_df)
+}
+
+extract_ppi_genes = function(){
+  ppi_df =import_ppi_interactions()
+  ppi_genes = c(ppi_df$proteinA_entrezid,ppi_df$proteinB_entrezid) %>%unique()
+
+  return(ppi_genes)
 }
