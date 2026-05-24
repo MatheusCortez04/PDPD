@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y libglpk-dev && \
 
 
 RUN R -e "install.packages(c('here','BiocManager','reportROC','httr2'), repos='https://cloud.r-project.org')"
-RUN R -e "BiocManager::install(c('diffuStats', 'igraphdata', 'igraph'), ask=FALSE)"
+RUN R -e "BiocManager::install(c('diffuStats', 'igraphdata', 'igraph','clusterProfiler'), ask=FALSE)"
 
 WORKDIR /home/rstudio
 
