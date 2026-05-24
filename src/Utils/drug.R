@@ -22,31 +22,6 @@ drug_function_mapper = list(
         generate_drug_rank()
     }
 )
-
-get_drugbank_ids = function(){
-    drug_target_df  = read_drug_targets()
-
-    unique_drugbank_ids = drug_target_df %>%
-        dplyr::pull(drugbank_id) %>%
-        unique()
-
-    cat(sprintf("[INFO] Unique drugs in Drug-Target Dataframe: %d\n",length(unique_drugbank_ids)))
-    invisible(unique_drugbank_ids)
-}
-get_drug_targets = function(drugbank_id,ppi_gene_nodes,drug_target_df) {
-
-    drug_target_proteins = drug_target_df %>%
-        filter(drugbank_id == !!drugbank_id) %>%
-        distinct() %>%
-        dplyr::mutate(
-            drugbank_id = as.character(drugbank_id),
-            entrez_id   = as.character(entrez_id)) %>%
-        pull(entrez_id)
-
-    drug_target_proteins = intersect(drug_target_proteins, ppi_gene_nodes)
-    invisible(drug_target_proteins)
-}
-
 calculate_drug_score = function(){
     
     cat(sprintf("\n[INFO] Starting drug scoring pipeline...\n"))
@@ -59,14 +34,14 @@ calculate_drug_score = function(){
         MDD = list(name = "MDD", genes = get_mdd_disease_module()$entrez_id),
         BD = list(name = "BD", genes = get_bipolar_disease_module()$entrez_id)
     )
-    drugbank_ids = get_drugbank_ids()
-    ppi_gene_nodes = get_ppi_nodes()
-    drug_target_df=read_drug_targets()
+    drugbank_ids = extract_drugbank_ids()
+    ppi_gene_nodes = extract_ppi_genes()
+    drug_target_df=import_drug_targets_df()
 
     cat(sprintf("[INFO] Total drugs: %d | PPI nodes: %d\n",
         length(drugbank_ids), length(ppi_gene_nodes)))
 
-    drug_targets = purrr::map(drugbank_ids, get_drug_targets, ppi_gene_nodes,drug_target_df)
+    drug_targets = purrr::map(drugbank_ids, extract_targets_per_drug,drug_target_df)
     names(drug_targets) = drugbank_ids
 
     for(kernel_name in kernel_names){
@@ -108,14 +83,6 @@ calculate_drug_score = function(){
     }
 
 }
-
-read_drug_targets = function(){
-    drug_target_df = read.csv(here("src","Data","Drug","drug_targets.csv")) %>% 
-        rename(drugbank_id=Drug,entrez_id=Target) %>%
-        distinct() 
-    invisible(drug_target_df)
-}
-
 compute_drug_score = function(targets,disease_genes,kernel_matrix) {
   if (length(targets) <= 0) {
     return(NA_real_)
@@ -176,3 +143,35 @@ generate_drug_rank = function() {
     }
 
 }
+import_drug_targets_df = function(){
+    file_path =here("src","Data","Drug","drug_targets_DrugBank_Gysi.csv")
+    if(!file.exists(file_path)){
+        stop(sprintf("\n[ERROR] Drug-target file not found:\n%s\nThis file is required for predictive calculations.",file_path))
+    }
+    valid_genes =extract_ppi_genes()
+    drug_target_df = read.csv(file_path,stringsAsFactors = FALSE) %>%
+        dplyr::rename(drugbank_id = Drug,entrez_id=Target) %>%
+        dplyr::filter(entrez_id %in%valid_genes)  %>%
+        dplyr::distinct(drugbank_id,entrez_id) %>%
+        dplyr::mutate(entrez_id = as.character(entrez_id))
+
+    return(drug_target_df)
+}
+
+extract_targets_per_drug = function(input_drug_id, drug_target_df) {
+    valid_targets = drug_target_df %>%
+        dplyr::filter(drugbank_id == input_drug_id) %>%
+        dplyr::pull(entrez_id)
+    
+    return(valid_targets)
+}
+extract_drugbank_ids = function(){
+    drug_target_df  = import_drug_targets_df()
+    unique_drugbank_ids = drug_target_df %>%
+        dplyr::distinct(drugbank_id) %>%
+        dplyr::pull(drugbank_id)
+
+    cat(sprintf("[INFO] Unique drugs in Drug-Target Dataframe: %d\n",length(unique_drugbank_ids)))
+    invisible(unique_drugbank_ids)
+}
+
