@@ -33,6 +33,15 @@ get_open_target_config = function(){
                             }
                         }
                     }
+                }',
+                clinical_report='query RecordDetailQuery($clinicalReportId: String!) {
+                    clinicalReport(clinicalReportId: $clinicalReportId) {
+                      id
+                      title
+                      clinicalStage
+                      source
+                      url
+                    }
                 }'
             ),
             disease_ids = list("MDD" = "MONDO_0002009", "BD" = "MONDO_0004985")
@@ -143,5 +152,31 @@ get_drug_candidates = function (disease = c("MDD", "BD")) {
     dplyr::distinct() %>%
     dplyr::arrange(desc(max_clinical_stage_open_targets))
   return (parsed_data)
+}
+
+get_clinical_report_data= function(clinicalReportId){
+    opentarget_config = get_open_target_config()
+    endpoint = opentarget_config$url
+    graphql_query = opentarget_config$queries$clinical_report
+
+    response = httr2::request(endpoint) %>%
+        httr2::req_body_json(
+            list(
+                query = graphql_query,
+                variables = list(clinicalReportId =clinicalReportId)
+            )
+        ) %>%
+        httr2::req_perform()
+
+    data = response %>% resp_body_json()
+    report = data$data$clinicalReport
+    if(is.null(report)) return(NULL)
+    evidence_summary = sprintf("%s (%s)", report$source, report$url)
+  return(tibble(
+      clinical_report_id = clinicalReportId,
+      source = report$source,
+      url = report$url,
+      evidence_summary
+    ))
 }
 
