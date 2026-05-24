@@ -2,7 +2,7 @@
 library(utils)
 library(here)
 library(tidyverse)
-source(here("src","Utils","graph.R"))
+source(here("src","Utils","graph_metrics.R"))
 source(here("src","Utils","kernels.R"))
 source(here("src","Utils","drug.R"))
 source(here("src","Utils","evaluation.R"))
