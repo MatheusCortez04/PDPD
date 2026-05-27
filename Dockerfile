@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y libglpk-dev && \
 
 
 RUN R -e 'install.packages("pak", repos = sprintf("https://r-lib.github.io/p/pak/stable/%s/%s/%s", .Platform$pkgType, R.Version()$os, R.Version()$arch))'
-RUN R -e "pak::pkg_install(c('tidyverse','here', 'reportROC', 'httr2', 'diffuStats', 'igraphdata', 'igraph', 'clusterProfiler', 'org.Hs.eg.db'))"
+RUN R -e "pak::pkg_install(c('tidyverse','here', 'reportROC', 'httr2', 'diffuStats', 'igraphdata', 'igraph', 'clusterProfiler', 'org.Hs.eg.db','enrichplot','ReactomePA'))"
 WORKDIR /home/rstudio
 
 COPY .  .
