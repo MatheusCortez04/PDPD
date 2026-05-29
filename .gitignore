@@ -1,6 +1,7 @@
 .config
 .local
 *.csv
+*.RData
 *.Rdata
 
 !drug_targets_DrugBank_Gysi.csv
