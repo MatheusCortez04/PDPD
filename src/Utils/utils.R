@@ -107,3 +107,19 @@ extract_ppi_genes = function(){
 
   return(ppi_genes)
 }
+
+extract_specific_genes = function(disease = c("MDD", "BD")){
+    disease = match.arg(disease)
+
+    mdd_disease_genes = get_disease_genes("MDD")
+    bipolar_disease_genes = get_disease_genes("BD")
+
+    mdd_specific_genes = mdd_disease_genes %>% dplyr::anti_join(bipolar_disease_genes,by='entrez_id')
+    bipolar_specific_genes = bipolar_disease_genes %>% dplyr::anti_join(mdd_disease_genes,by='entrez_id')
+    
+    if (disease == "MDD") {
+        return(mdd_specific_genes)
+    } else {
+        return(bipolar_specific_genes)
+    }
+}
