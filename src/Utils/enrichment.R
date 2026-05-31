@@ -171,3 +171,40 @@ calculate_enrichment_common_genes = function(){
         reactome=enrich_reactome
     ))
 }
+comparate_cluster_go = function(entrez_ids,output_file_name){
+    output_dir = here("src", "Enrichment",'Comparison','GeneOntology')
+    output_rdata_dir = here(output_dir, "RData")
+    output_csv_file= here(output_dir,sprintf("%s_comparison_go_simplify.csv",output_file_name))
+    output_rdata_file = here(output_rdata_dir, sprintf("%s_comparison_go_simplify.RData", output_file_name))
+
+    if (file.exists(output_rdata_file)) {
+        cat("[INFO] Matrix already exists for this disease. Loading file...\n")
+       load_cluster = load_rdata(output_rdata_file)
+        return(invisible(load_cluster)) 
+        
+    }
+    create_dir(output_dir)
+    create_dir(output_rdata_dir)
+
+    cat(sprintf("[INFO] Running Compare Cluster enrichment analysis with %d clusters...\n", length(entrez_ids)))
+
+    compare_cluster = compareCluster(geneClusters = entrez_ids,fun= "enrichGO",
+        OrgDb= org.Hs.eg.db,ont= "BP",
+        pAdjustMethod= "BH",pvalueCutoff= 0.05,
+        qvalueCutoff= 0.05)
+
+
+        
+    if (is.null(compare_cluster) || nrow(as.data.frame(compare_cluster)) == 0) {
+        cat("[WARNING] No significant GeneOntology pathways identified.\n")
+        return(invisible(NULL))
+    }
+    cat("[INFO] Simplifying redundant GO terms...\n")
+    compare_cluster_simplify = simplify(compare_cluster, cutoff = 0.7, by = "p.adjust", select_fun = min)
+
+    cat("[INFO] Saving RData and CSV files to disk...\n")
+    save(compare_cluster_simplify, file = output_rdata_file)
+    write.csv(compare_cluster_simplify, file = output_csv_file, row.names = FALSE)
+    return(invisible(compare_cluster_simplify))
+
+}
