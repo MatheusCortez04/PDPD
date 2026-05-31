@@ -2,7 +2,9 @@ library(here)
 library(clusterProfiler)
 library(org.Hs.eg.db)
 library(enrichplot)
+library(dplyr)
 source(here("src","Utils","utils.R"))
+source(here("src","Utils","graph_metrics.R"))
 
 calculate_go_enrichment = function(entrez_ids, disease, output_file_prefix) {
     output_dir = here("src", "Enrichment", disease)
@@ -116,20 +118,18 @@ calculate_enrichment_by_disease = function(disease = c("MDD", "BD")){
 
     disease_file_prefix = ifelse(disease == "MDD","mdd_all_genes","bipolar_all_genes")
 
-    specific_gene_file_prefix = ifelse(disease == "MDD","mdd_specific_genes","bipolar_specific_genes")
+    disease_genes = get_disease_genes(disease) %>%dplyr::pull(entrez_id)
 
-    disease_genes = extract_genes_by_disease(disease = disease) %>%dplyr::pull(entrez_id)
-
-    cat(sprintf("[INFO] Total disease-associated genes: %d\n",nrow(disease_genes)))
-
-    calculate_go_enrichment(entrez_ids= disease_genes,output_file_prefix = disease_file_prefix)
-    calculate_kegg_enrichment(entrez_ids= disease_genes,output_file_prefix = disease_file_prefix)
-    calculate_go_enrichment(entrez_ids= disease_specific_genes,output_file_prefix = specific_gene_file_prefix)
-    calculate_kegg_enrichment(entrez_ids= disease_specific_genes,output_file_prefix = specific_gene_file_prefix)
-
+    enrich_go= calculate_go_enrichment(entrez_ids= disease_genes,disease,output_file_prefix = disease_file_prefix)
+    enrich_kegg= calculate_kegg_enrichment(entrez_ids= disease_genes,disease,output_file_prefix = disease_file_prefix)
+    enrich_reactome= calculate_reactome_enrichment(entrez_ids= disease_genes,disease,output_file_prefix = disease_file_prefix)
     cat(sprintf("[INFO] Enrichment pipeline completed for disease: %s\n",disease))
 
-    return(invisible(NULL))
+    return(list(
+        gene_ontology=enrich_go,
+        kegg=enrich_kegg,
+        reactome=enrich_reactome
+    ))
 }
 
 calculate_enrichment_by_disease_specific_genes = function(disease = c("MDD", "BD")){
@@ -147,7 +147,7 @@ calculate_enrichment_by_disease_specific_genes = function(disease = c("MDD", "BD
     cat(sprintf("[INFO] Enrichment pipeline completed for disease: %s\n",disease))
 
     return(list(
-       gene_ontology=enrich_go,
+        gene_ontology=enrich_go,
         kegg=enrich_kegg,
         reactome=enrich_reactome
     ))
@@ -166,7 +166,7 @@ calculate_enrichment_common_genes = function(){
     cat(sprintf("[INFO] Enrichment pipeline completed for Common Genes\n"))
 
     return(list(
-       gene_ontology=enrich_go,
+        gene_ontology=enrich_go,
         kegg=enrich_kegg,
         reactome=enrich_reactome
     ))
