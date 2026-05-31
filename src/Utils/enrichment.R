@@ -186,11 +186,15 @@ comparate_cluster_go = function(entrez_ids,output_file_name){
     create_dir(output_dir)
     create_dir(output_rdata_dir)
 
-    cat(sprintf("[INFO] Running Compare Cluster enrichment analysis with %d clusters...\n", length(entrez_ids)))
+    cat(sprintf("[INFO] Running Compare Cluster enrichment GO analysis with %d clusters...\n", length(entrez_ids)))
 
-    compare_cluster = compareCluster(geneClusters = entrez_ids,fun= "enrichGO",
-        OrgDb= org.Hs.eg.db,ont= "BP",
-        pAdjustMethod= "BH",pvalueCutoff= 0.05,
+    compare_cluster = clusterProfiler::compareCluster(
+        geneClusters = entrez_ids,
+        fun= "enrichGO",
+        OrgDb= org.Hs.eg.db,
+        ont= "BP",
+        pAdjustMethod= "BH",
+        pvalueCutoff= 0.05,
         qvalueCutoff= 0.05)
 
 
@@ -204,7 +208,110 @@ comparate_cluster_go = function(entrez_ids,output_file_name){
 
     cat("[INFO] Saving RData and CSV files to disk...\n")
     save(compare_cluster_simplify, file = output_rdata_file)
-    write.csv(compare_cluster_simplify, file = output_csv_file, row.names = FALSE)
+    write.csv(as.data.frame(compare_cluster_simplify), file = output_csv_file, row.names = FALSE)
     return(invisible(compare_cluster_simplify))
 
 }
+comparate_cluster_kegg = function(entrez_ids,output_file_name){
+    output_dir = here("src", "Enrichment",'Comparison','KEGG')
+    output_rdata_dir = here(output_dir, "RData")
+    output_csv_file= here(output_dir,sprintf("%s_comparison_kegg.csv",output_file_name))
+    output_rdata_file = here(output_rdata_dir, sprintf("%s_comparison_kegg.RData", output_file_name))
+
+    if (file.exists(output_rdata_file)) {
+        cat("[INFO] Matrix already exists for this disease. Loading file...\n")
+       load_cluster = load_rdata(output_rdata_file)
+        return(invisible(load_cluster)) 
+        
+    }
+    create_dir(output_dir)
+    create_dir(output_rdata_dir)
+
+    cat(sprintf("[INFO] Running Compare Cluster enrichment KEGG analysis with %d clusters...\n", length(entrez_ids)))
+
+    compare_cluster_kegg = clusterProfiler::compareCluster(geneClusters = entrez_ids,
+        fun= "enrichKEGG", 
+        organism = "hsa", 
+        keyType = "kegg", 
+        pvalueCutoff = 0.05, 
+        pAdjustMethod = "BH",
+        maxGSSize = 500, 
+        qvalueCutoff = 0.2)
+
+
+    if (is.null(compare_cluster_kegg) || nrow(as.data.frame(compare_cluster_kegg)) == 0) {
+        cat("[WARNING] No significant KEGG pathways identified.\n")
+        return(invisible(NULL))
+    }
+
+    cat("[INFO] Saving RData and CSV files to disk...\n")
+    save(compare_cluster_kegg, file = output_rdata_file)
+    write.csv(as.data.frame(compare_cluster_kegg), file = output_csv_file, row.names = FALSE)
+    return(invisible(compare_cluster_kegg))
+
+}
+comparate_cluster_reactome = function(entrez_ids,output_file_name){
+    output_dir = here("src", "Enrichment",'Comparison','Reactome')
+    output_rdata_dir = here(output_dir, "RData")
+    output_csv_file= here(output_dir,sprintf("%s_comparison_reactome.csv",output_file_name))
+    output_rdata_file = here(output_rdata_dir, sprintf("%s_comparison_reactome.RData", output_file_name))
+
+    if (file.exists(output_rdata_file)) {
+        cat("[INFO] Matrix already exists for this disease. Loading file...\n")
+       load_cluster = load_rdata(output_rdata_file)
+        return(invisible(load_cluster)) 
+        
+    }
+    create_dir(output_dir)
+    create_dir(output_rdata_dir)
+
+    cat(sprintf("[INFO] Running Compare Cluster enrichment Reactome analysis with %d clusters...\n", length(entrez_ids)))
+
+    compare_cluster_reactome = clusterProfiler::compareCluster(
+        geneClusters = entrez_ids,
+        fun= "enrichPathway", 
+        organism = "human", 
+        pvalueCutoff = 0.05, 
+        pAdjustMethod = "BH",
+        maxGSSize = 500, 
+        qvalueCutoff = 0.2)
+
+
+    if (is.null(compare_cluster_reactome) || nrow(as.data.frame(compare_cluster_reactome)) == 0) {
+        cat("[WARNING] No significant Reactome pathways identified.\n")
+        return(invisible(NULL))
+    }
+
+    cat("[INFO] Saving RData and CSV files to disk...\n")
+    save(compare_cluster_reactome, file = output_rdata_file)
+    write.csv(as.data.frame(compare_cluster_reactome), file = output_csv_file, row.names = FALSE)
+    return(invisible(compare_cluster_reactome))
+
+}
+
+
+compare_disease_modules= function(){
+    cat("[INFO] Preparing gene modules for cross-comparison...\n")
+
+    mdd_specific = as.character(extract_specific_genes("MDD") %>% dplyr::pull(entrez_id))
+    bd_specific = as.character(extract_specific_genes("BD") %>% dplyr::pull(entrez_id))
+    common_genes = as.character(get_common_gene())
+
+    module_list = list(
+        "MDD (Specific)" = mdd_specific,
+        "BD (Specific)"  = bd_specific,
+        "Commons"        = common_genes
+    )
+
+    cat("[INFO] Running compareCluster (Gene Ontology). This may take a few minutes...\n")
+    disease_comparison_go = comparate_cluster_go(module_list,"disease_comparison")
+    disease_comparison_kegg = comparate_cluster_kegg(module_list,"disease_comparison")
+    disease_comparison_reactome = comparate_cluster_reactome(module_list,"disease_comparison")
+    return(invisible(
+        list(
+            go=disease_comparison_go,
+            kegg=disease_comparison_kegg,
+            reactome =disease_comparison_reactome
+        )
+    ))
+}   
