@@ -1,6 +1,8 @@
 library(here)
 library(purrr)
 library(readr)
+library(dplyr)
+library(tidyr)
 source(here("src","Utils","utils.R"))
 
 generate_ordered_drug_protein_matrix = function(drug_target_df,ppi_genes,drugbank_ids){
@@ -100,7 +102,7 @@ generate_drug_rank = function(disease = c("MDD", "BD")) {
     rdata_dir = here(score_base_dir, "RData")
 
     score_list = kernel_names %>%
-        map(function(kernel){
+        purrr::map(function(kernel){
             rdata_path = here(score_base_dir, "RData", paste0(kernel, ".Rdata"))
             if (!file.exists(rdata_path)) {
                 cat("[WARN] Score RData not  found:", rdata_path, "\n")
@@ -108,17 +110,17 @@ generate_drug_rank = function(disease = c("MDD", "BD")) {
         }
             df = load_rdata(rdata_path)
             df = df %>%
-                mutate(!!kernel := rank(-drug_score,ties.method = "average")) %>%
-                select(drugbank_id, all_of(kernel))
+                dplyr::mutate(!!kernel := rank(-drug_score,ties.method = "average")) %>%
+                dplyr::select(drugbank_id, all_of(kernel))
                 return(df)
         }) %>% compact()
 
 
 
-    final_rank_df = reduce(score_list, full_join, by = "drugbank_id")
+    final_rank_df = purrr::reduce(score_list, full_join, by = "drugbank_id")
     final_rank_df = final_rank_df %>%
-        mutate(average_rank = rowMeans(select(., all_of(kernel_names)), na.rm = TRUE)) %>%
-        arrange(average_rank)
+        dplyr::mutate(average_rank = rowMeans(dplyr::select(., all_of(kernel_names)), na.rm = TRUE)) %>%
+        dplyr::arrange(average_rank)
 
     output_csv = here(score_base_dir, "average_kernel_rank.csv")
     write_csv(final_rank_df, output_csv)
@@ -130,16 +132,16 @@ generate_drug_rank = function(disease = c("MDD", "BD")) {
 
 build_drug_protein_matrix= function(data_frame,ppi_genes,drugbank_ids){
   data_frame %>%
-    filter(entrez_id %in% ppi_genes) %>%
-    distinct(drugbank_id, entrez_id) %>%
+    dplyr::filter(entrez_id %in% ppi_genes) %>%
+    dplyr::distinct(drugbank_id, entrez_id) %>%
     #O Value é utilizado para que cada iteração do dataframe original contenha o valor 1
     # e as demais lacunas sejam preenchidas com zero
-    mutate(
+    dplyr::mutate(
       drugbank_id = factor(drugbank_id, levels = drugbank_ids),
       entrez_id = factor(entrez_id, levels = ppi_genes),
       value = 1
     ) %>%
-    pivot_wider(
+    tidyr::pivot_wider(
       id_cols = drugbank_id,
       names_from = entrez_id,
       values_from = value,
@@ -147,7 +149,7 @@ build_drug_protein_matrix= function(data_frame,ppi_genes,drugbank_ids){
       names_expand = TRUE,
       id_expand = TRUE
     ) %>%
-    arrange(drugbank_id)
+    dplyr::arrange(drugbank_id)
 }
 
 load_drug_target_matrix = function() {
@@ -173,7 +175,7 @@ process_scores_for_disease = function(kernel,disease_info,drug_protein_matrix,ke
         drugbank_id = rownames(drug_protein_matrix),
         drug_score = as.numeric(score_vector)
     ) %>%
-        arrange(desc(drug_score))
+        dplyr::arrange(desc(drug_score))
 
     output_dir <- here("src", "Data", "Drug", "Score", disease_name)
     rdata_sub_dir <- here(output_dir, "RData")
@@ -185,7 +187,7 @@ process_scores_for_disease = function(kernel,disease_info,drug_protein_matrix,ke
     write.csv(score_df, file = output_path_csv, row.names = FALSE)
 
     save(score_df, file = output_path_rdata)
-    cat(paste("   ✔ Score salvo em:", output_path_csv, "\n"))
+    cat(paste("✔ Score salvo em:",output_path_csv,"\n"))
     invisible(score_df)
 }
 
