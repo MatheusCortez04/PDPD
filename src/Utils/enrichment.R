@@ -314,4 +314,37 @@ compare_disease_modules= function(){
             reactome =disease_comparison_reactome
         )
     ))
-}   
+}
+
+enrichment_by_rank_drugs_by_disease = function(disease = c("MDD", "BD")) {
+    disease = match.arg(disease)
+    cat(sprintf("\n[INFO] Starting enrichment analysis for disease: %s\n", disease))
+    
+    score_filter = get_score_disease_gene_association()
+    
+    rank_dir = here("src", "Evaluation", disease)
+    rank_file_name = c("MDD" = sprintf("prediction_mdd_score_filter_%s_.csv", score_filter), 
+                       "BD" = sprintf("prediction_bipolar_score_filter_%s_.csv", score_filter))
+    
+    cat("[INFO] Loading the top 100 ranked drugs...\n")
+    rank_drug_disease = read.csv(here(rank_dir, rank_file_name[disease])) %>% 
+        dplyr::slice_head(n = 100)
+
+    cat("[INFO] Importing drug targets mapping...\n")
+    drug_target_df  = import_drug_targets_df()
+    
+    cat("[INFO] Extracting specific targets for the ranked drugs...\n")
+    drug_targets = purrr::map(rank_drug_disease$drugbank_id, extract_targets_per_drug, drug_target_df)
+    names(drug_targets) = rank_drug_disease$drugbank_id
+
+    cat("[INFO] Running Gene Ontology (GO) pathway comparison...\n")
+    comparate_cluster_go(drug_targets, sprintf("drug_pathways_rank_%s", disease))
+    
+    cat("[INFO] Running KEGG pathway comparison...\n")
+    comparate_cluster_kegg(drug_targets, sprintf("drug_pathways_rank_%s", disease))
+    
+    cat("[INFO] Running Reactome pathway comparison...\n")
+    comparate_cluster_reactome(drug_targets, sprintf("drug_pathways_rank_%s", disease))
+    
+    cat("[INFO] Enrichment analysis completed successfully!\n")
+}
