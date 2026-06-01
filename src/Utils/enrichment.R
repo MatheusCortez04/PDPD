@@ -304,9 +304,9 @@ compare_disease_modules= function(){
     )
 
     cat("[INFO] Running compareCluster (Gene Ontology). This may take a few minutes...\n")
-    disease_comparison_go = comparate_cluster_go(module_list,"disease_comparison")
-    disease_comparison_kegg = comparate_cluster_kegg(module_list,"disease_comparison")
-    disease_comparison_reactome = comparate_cluster_reactome(module_list,"disease_comparison")
+    disease_comparison_go = comparate_cluster_go(module_list,"disease")
+    disease_comparison_kegg = comparate_cluster_kegg(module_list,"disease")
+    disease_comparison_reactome = comparate_cluster_reactome(module_list,"disease")
     return(invisible(
         list(
             go=disease_comparison_go,
@@ -347,4 +347,97 @@ enrichment_by_rank_drugs_by_disease = function(disease = c("MDD", "BD")) {
     comparate_cluster_reactome(drug_targets, sprintf("drug_pathways_rank_%s", disease))
     
     cat("[INFO] Enrichment analysis completed successfully!\n")
+}
+plot_go_disease_comparison = function() {
+    cat("\n[INFO] Loading the object with the 3 variables (MDD, BD, Commons)...\n")
+    ora_go = load_rdata(here("src", "Enrichment", "Comparison", "GeneOntology", "RData", "disease_comparison_go_simplify.RData"))
+    
+    cat("[INFO] Generating the comparative dotplot...\n")
+    
+    graph = enrichplot::dotplot(ora_go, showCategory = 5) + 
+        ggplot2::theme_bw() +
+        ggplot2::scale_y_discrete(labels = function(x) stringr::str_wrap(x, width = 45)) +
+        ggplot2::theme(
+            axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 10, face = "bold", color = "black"),
+            axis.text.y = ggplot2::element_text(size = 9, color = "black"),
+            axis.title = ggplot2::element_blank(),
+            plot.title = ggplot2::element_text(face = "bold", hjust = 0.5, margin = ggplot2::margin(b = 15))
+        ) +
+        ggplot2::ggtitle("Comparative Analysis: MDD vs BD vs Commons")
+    
+    output_graph_dir = here("src", "Enrichment", "Comparison","GeneOntology", "Graph")
+    create_dir(output_graph_dir)
+    
+    pdf_path = here(output_graph_dir, "Comparative_Pathway_Analysis_MDD_BD_Commons.pdf")
+    cat(sprintf("[INFO] Saving comparative dotplot to:\n%s\n", pdf_path))
+    
+
+    grDevices::pdf(file = pdf_path, width = 10, height = 7)
+    print(graph)
+    grDevices::dev.off()
+    cat("[INFO] PDF successfully exported.\n")
+    return(invisible(graph))
+}
+plot_kegg_disease_comparison = function() {
+    cat("\n[INFO] Loading the object with the 3 variables (MDD, BD, Commons)...\n")
+    ora_kegg = load_rdata(here("src", "Enrichment", "Comparison", "KEGG", "RData", "disease_comparison_kegg.RData"))
+    
+    cat("[INFO] Generating the comparative dotplot...\n")
+    
+    graph = enrichplot::dotplot(ora_kegg, showCategory = 5) + 
+        ggplot2::theme_bw() +
+        ggplot2::scale_y_discrete(labels = function(x) stringr::str_wrap(x, width = 45)) +
+        ggplot2::theme(
+            axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 10, face = "bold", color = "black"),
+            axis.text.y = ggplot2::element_text(size = 9, color = "black"),
+            axis.title = ggplot2::element_blank(),
+            plot.title = ggplot2::element_text(face = "bold", hjust = 0.5, margin = ggplot2::margin(b = 15))
+        ) +
+        ggplot2::ggtitle("Comparative KEGG Analysis: MDD vs BD vs Commons")
+    
+    output_graph_dir = here("src", "Enrichment", "Comparison", "KEGG", "Graph")
+    create_dir(output_graph_dir)
+    
+    pdf_path = here(output_graph_dir, "Comparative_KEGG_Analysis_MDD_BD_Commons.pdf")
+    cat(sprintf("[INFO] Saving comparative dotplot to:\n%s\n", pdf_path))
+    
+    grDevices::pdf(file = pdf_path, width = 10, height = 7)
+    print(graph)
+    grDevices::dev.off()
+    
+    cat("[INFO] PDF successfully exported.\n")
+    return(invisible(graph))
+}
+
+plot_reactome_disease_comparison = function() {
+    cat("\n[INFO] Loading the object with the 3 variables (MDD, BD, Commons)...\n")
+    ora_reactome = load_rdata(here("src", "Enrichment", "Comparison", "Reactome", "RData", "disease_comparison_reactome.RData"))
+    
+    cat("[INFO] Generating the comparative dotplot...\n")
+    
+    require(enrichplot, quietly = TRUE)
+    
+    graph = enrichplot::dotplot(ora_reactome, showCategory = 5) + 
+        ggplot2::theme_bw() +
+        ggplot2::scale_y_discrete(labels = function(x) stringr::str_wrap(x, width = 45)) +
+        ggplot2::theme(
+            axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 10, face = "bold", color = "black"),
+            axis.text.y = ggplot2::element_text(size = 9, color = "black"),
+            axis.title = ggplot2::element_blank(),
+            plot.title = ggplot2::element_text(face = "bold", hjust = 0.5, margin = ggplot2::margin(b = 15))
+        ) +
+        ggplot2::ggtitle("Comparative Reactome Analysis: MDD vs BD vs Commons")
+    
+    output_graph_dir = here("src", "Enrichment", "Comparison", "Reactome", "Graph")
+    create_dir(output_graph_dir)
+    
+    pdf_path = here(output_graph_dir, "Comparative_Reactome_Analysis_MDD_BD_Commons.pdf")
+    cat(sprintf("[INFO] Saving comparative dotplot to:\n%s\n", pdf_path))
+    
+    grDevices::pdf(file = pdf_path, width = 10, height = 7)
+    print(graph)
+    grDevices::dev.off()
+    
+    cat("[INFO] PDF successfully exported.\n")
+    return(invisible(graph))
 }
