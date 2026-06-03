@@ -615,5 +615,179 @@ gsea_mdd_reactome = function() {
 
     return(resultado_reactome_kegg)
 }
+gsea_bd_go = function() {
+    set.seed(42) 
+
+    bd_disease_graph = get_disease_subgraph('BD')
+
+    between_calc = igraph::betweenness(
+        bd_disease_graph,
+        directed = FALSE
+    )
+
+    between_scores = between_calc
+    names(between_scores) = igraph::V(bd_disease_graph)$name
+
+    geneList_bd = sort(between_scores, decreasing = TRUE)
+    
+    cat("[INFO] Executando Enriquecimento Funcional Ranqueado...\n")
+
+    resultado_gsea_go = clusterProfiler::gseGO(
+        geneList      = geneList_bd, 
+        ont           = "BP", 
+        OrgDb         = org.Hs.eg.db, 
+        keytype       = "ENTREZID",
+        exponent      = 1, 
+        eps           = 0,            
+        maxGSSize     = 500, 
+        pvalueCutoff  = 0.05, 
+        pAdjustMethod = "BH", 
+        verbose       = FALSE, 
+        seed          = TRUE
+    )
+    
+
+    if (is.null(resultado_gsea_go) || nrow(as.data.frame(resultado_gsea_go)) == 0) {
+        warning("Nenhuma via biológica significativa foi encontrada ou ocorreu falha de mapeamento de IDs.")
+        return(NULL)
+    }
+    output_dir = here("src", "Enrichment",'GSEA','GO','BD')
+    output_dir_rdata = here(output_dir,'RData')
+    create_dir(output_dir_rdata)
+
+
+    save(resultado_gsea_go, file = here(output_dir_rdata,'gsea_betweenness.RData'))
+    
+    tabela_bd_limpa = as.data.frame(resultado_gsea_go) %>%
+        dplyr::filter(!is.na(ID))
+        
+    write.table(
+        tabela_bd_limpa, 
+        file = here(output_dir,'gsea_betweenness.csv'), 
+        sep = ";",         
+        dec = ",",         
+        row.names = FALSE, 
+        qmethod = "double"
+    )
+    cat("[INFO] Análise concluída com sucesso.\n")
+
+
+    return(resultado_gsea_go)
+}
+gsea_bd_kegg = function() {
+    set.seed(42) 
+    bd_disease_graph = get_disease_subgraph('BD')
+
+    between_calc = igraph::betweenness(
+        bd_disease_graph,
+        directed = FALSE
+    )
+
+    between_scores = between_calc
+    names(between_scores) = igraph::V(bd_disease_graph)$name
+
+
+
+    geneList_bd = sort(between_scores, decreasing = TRUE)
+    
+    cat("[INFO] Executando Enriquecimento Funcional Ranqueado...\n")
+
+    resultado_gsea_kegg = clusterProfiler::gseKEGG(geneList=geneList_bd, 
+        organism = "hsa", 
+        keyType = "kegg", 
+        exponent = 1, 
+        nPerm = 1000, 
+        maxGSSize = 500, 
+        pvalueCutoff = 0.05, 
+        pAdjustMethod = "BH", 
+        verbose = TRUE,
+        se_internal_data = FALSE, 
+        seed = TRUE)
+
+    
+
+    if (is.null(resultado_gsea_kegg) || nrow(as.data.frame(resultado_gsea_kegg)) == 0) {
+        warning("[ALERTA] Nenhuma via biológica significativa foi encontrada ou ocorreu falha de mapeamento de IDs.")
+        return(NULL)
+    }
+    output_dir = here("src", "Enrichment",'GSEA','KEGG','BD')
+    output_dir_rdata = here(output_dir,'RData')
+    create_dir(output_dir_rdata)
+
+    save(resultado_gsea_kegg, file = here(output_dir_rdata,'gsea_betweenness.RData'))
+    
+    tabela_bd_limpa_kegg = as.data.frame(resultado_gsea_kegg) %>%
+        dplyr::filter(!is.na(ID))
+        
+    write.table(
+        tabela_bd_limpa_kegg, 
+        file = here(output_dir,'gsea_kegg_betweenness.csv'), 
+        sep = ";",         
+        dec = ",",         
+        row.names = FALSE, 
+        qmethod = "double"
+    )
+    cat("[INFO] Análise concluída com sucesso.\n")
+
+
+    return(resultado_gsea_kegg)
+}
+
+gsea_bd_reactome = function() {
+    set.seed(42) 
+    bd_disease_graph = get_disease_subgraph('BD')
+
+    between_calc = igraph::betweenness(
+        bd_disease_graph,
+        directed = FALSE
+    )
+
+    between_scores = between_calc
+    names(between_scores) = igraph::V(bd_disease_graph)$name
+
+    geneList_bd = sort(between_scores, decreasing = TRUE)
+    
+    cat("[INFO] Executando Enriquecimento Funcional Ranqueado...\n")
+
+    resultado_reactome = ReactomePA::gsePathway(
+        geneList=geneList_bd, 
+        organism = "human", 
+        exponent = 1, 
+        nPerm = 1000, 
+        maxGSSize = 500, 
+        pvalueCutoff = 0.05, 
+        pAdjustMethod = "BH", 
+        verbose = TRUE)
+
+
+    
+
+    if (is.null(resultado_reactome) || nrow(as.data.frame(resultado_reactome)) == 0) {
+        warning("[ALERTA] Nenhuma via biológica significativa foi encontrada ou ocorreu falha de mapeamento de IDs.")
+        return(NULL)
+    }
+    output_dir = here("src", "Enrichment",'GSEA','REACTOME')
+    output_dir_rdata = here(output_dir,'RData')
+    create_dir(output_dir_rdata)
+
+    save(resultado_reactome, file = here(output_dir_rdata,'gsea_betweenness.RData'))
+    
+    tabela_bd_limpa_kegg = as.data.frame(resultado_reactome) %>%
+        dplyr::filter(!is.na(ID))
+        
+    write.table(
+        tabela_bd_limpa_kegg, 
+        file = here(output_dir,'gsea_reactome_betweenness.csv'), 
+        sep = ";",         
+        dec = ",",         
+        row.names = FALSE, 
+        qmethod = "double"
+    )
+    cat("[INFO] Análise concluída com sucesso.\n")
+
+
+    return(resultado_reactome)
+}
+
 
 
