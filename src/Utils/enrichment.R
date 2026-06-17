@@ -8,6 +8,9 @@ source(here("src","Utils","graph_metrics.R"))
 library(igraph)
 library(tibble)
 library(ggplot2)
+library(tidyr)
+library(enrichR)
+
 calculate_go_enrichment = function(entrez_ids, disease, output_file_prefix) {
     output_dir = here("src", "Enrichment", disease)
     output_rdata_dir = here(output_dir, "RData")
@@ -317,38 +320,140 @@ compare_disease_modules= function(){
         )
     ))
 }
-enrichment_by_rank_drugs_by_disease = function(disease = c("MDD", "BD")) {
+sea_rank_drugs_by_disease = function(disease = c("MDD", "BD")) {
     disease = match.arg(disease)
-    cat(sprintf("\n[INFO] Starting enrichment analysis for disease: %s\n", disease))
-    
+    cat(sprintf("[INFO] Running GSEA enrichment pipeline for %s\n", disease))
+
     score_filter = get_score_disease_gene_association()
-    
     rank_dir = here("src", "Evaluation", disease)
     rank_file_name = c("MDD" = sprintf("prediction_mdd_score_filter_%s_.csv", score_filter), 
-                       "BD" = sprintf("prediction_bipolar_score_filter_%s_.csv", score_filter))
+                       "BD"  = sprintf("prediction_bipolar_score_filter_%s_.csv", score_filter))
     
-    cat("[INFO] Loading the top 100 ranked drugs...\n")
-    rank_drug_disease = read.csv(here(rank_dir, rank_file_name[disease])) %>% 
-        dplyr::slice_head(n = 100)
 
-    cat("[INFO] Importing drug targets mapping...\n")
-    drug_target_df  = import_drug_targets_df()
-    
-    cat("[INFO] Extracting specific targets for the ranked drugs...\n")
-    drug_targets = purrr::map(rank_drug_disease$drugbank_id, extract_targets_per_drug, drug_target_df)
-    names(drug_targets) = rank_drug_disease$drugbank_id
+    rank_drug_disease = read.csv(here(rank_dir, rank_file_name[disease])) %>%
+        dplyr::select(drugbank_id, average_rank)
 
-    cat("[INFO] Running Gene Ontology (GO) pathway comparison...\n")
-    comparate_cluster_go(drug_targets, sprintf("drug_pathways_rank_%s", disease))
+    cat("[INFO] Loading drug-target interactions...\n")
+    drug_target_df = import_drug_targets_df()
     
-    cat("[INFO] Running KEGG pathway comparison...\n")
-    comparate_cluster_kegg(drug_targets, sprintf("drug_pathways_rank_%s", disease))
+    cat("[INFO] 3. Extraindo alvos específicos para os fármacos candidatos...\n")
+    rank_drug_targets = purrr::map(rank_drug_disease$drugbank_id, extract_targets_per_drug, drug_target_df) 
+    names(rank_drug_targets) = rank_drug_disease$drugbank_id
+
+    rank_drug_targets_symbol = map_ranked_drug_targets_to_symbols(rank_drug_targets)
+
+    cat("[INFO] Preparing ranked gene list for GSEA...\n")
+    matriz_ranqueada <- rank_drug_disease %>%
+        dplyr::mutate(
+            escore_log = -log10(average_rank + 1),
+            escore_gsea = as.numeric(scale(escore_log))
+        ) %>%
+        dplyr::arrange(desc(escore_gsea))
+
+    fita_matematica <- matriz_ranqueada$escore_gsea
+    names(fita_matematica) <- matriz_ranqueada$drugbank_id
+
+    set.seed(42)
+    ruido_estatistico <- runif(length(fita_matematica), min = -1e-6, max = 1e-6)
+    fita_matematica_estabilizada <- sort(fita_matematica + ruido_estatistico, decreasing = TRUE)
+
+    enrichr_dbs = c("KEGG_2026", "GO_Biological_Process_2026", "Reactome_Pathways_2024")
+    all_unique_targets = unique(rank_drug_targets_symbol$symbol)
     
-    cat("[INFO] Running Reactome pathway comparison...\n")
-    comparate_cluster_reactome(drug_targets, sprintf("drug_pathways_rank_%s", disease))
+    cat(sprintf("[INFO] Running Enrichr annotation for %d unique target genes...\n",length(all_unique_targets)))
+    enrichr_disease_response <- enrichR::enrichr(all_unique_targets, enrichr_dbs)
+
+
+    purrr::walk(enrichr_dbs, function(db_name) {
+        cat(sprintf("\n[INFO] Processing database: %s\n",db_name))
+        enrichr_db_df <- enrichr_disease_response[[db_name]] %>%
+            tidyr::separate_rows(Genes, sep = ";") %>%
+            dplyr::mutate(symbol = Genes) %>%
+            dplyr::select(-Genes) %>%
+            dplyr::distinct() 
+
+        cat("[INFO] Mapping drugs to enriched pathways...\n")
+        drug_pathways <- rank_drug_targets_symbol %>%
+            dplyr::inner_join(enrichr_db_df, by = "symbol", relationship = "many-to-many") %>%
+            dplyr::select(Term, P.value, Adjusted.P.value, Combined.Score, symbol, drugbank_id) %>% 
+            dplyr::distinct()
+
+        matriz_agrupada <- drug_pathways %>%
+            dplyr::group_by(Term, Adjusted.P.value, P.value, Combined.Score) %>%
+            dplyr::summarise(
+                target_count = n_distinct(symbol),
+                targets = paste(unique(symbol), collapse = ", "),
+                drug_count = n_distinct(drugbank_id),
+                drugs = paste(unique(drugbank_id), collapse = ", "),
+                .groups = "drop"
+            ) %>%
+            dplyr::arrange(desc(drug_count)) %>% 
+            dplyr::select(Term, Adjusted.P.value, P.value, Combined.Score, drug_count, target_count, drugs, targets) %>%
+            dplyr::distinct()
+            
+        matriz_agrupada_filtro = matriz_agrupada %>% dplyr::filter(drug_count < 1000)
+        
+        cat(sprintf("[INFO] Estrutura Inicial -> Termos brutos: %d | Termos filtrados (<1000): %d\n", 
+                    nrow(matriz_agrupada), nrow(matriz_agrupada_filtro)))
+
+        cat("[INFO] Building TERM2GENE mapping...\n")
+        term2Gene_df <- drug_pathways %>%
+            dplyr::filter(Term %in% matriz_agrupada_filtro$Term) %>%
+            dplyr::filter(!is.na(Term), Term != "NA", trimws(Term) != "", !is.na(drugbank_id)) %>%
+            dplyr::select(term = Term, gene = drugbank_id) %>%
+            dplyr::distinct() 
+
+        cat("[INFO] Running GSEA...\n")
+        result_gsea_db = clusterProfiler::GSEA(
+            geneList      = fita_matematica_estabilizada,
+            TERM2GENE     = term2Gene_df,
+            pvalueCutoff  = 0.05,
+            eps           = 0,
+            pAdjustMethod = "BH"
+        )
+        
     
-    cat("[INFO] Enrichment analysis completed successfully!\n")
+        if (is.null(result_gsea_db) || nrow(result_gsea_db@result) == 0) {
+            cat(sprintf("[WARNING] No significant pathways identified for %s.\n", db_name))
+            return() 
+        }
+
+        result_gsea_db_raw_df = result_gsea_db@result %>% 
+            dplyr::arrange(desc(NES)) %>%
+            dplyr::select(-log2err) %>% 
+            dplyr::distinct()
+        
+        
+        output_dir= here("src","Enrichment","Drug",disease,db_name)
+        create_dir(output_dir)
+
+        raw_filename = sprintf("%s_gsea_%s_raw.csv",disease, db_name)
+        write.csv(result_gsea_db_raw_df,file=here(output_dir,raw_filename), row.names = FALSE)
+        cat(sprintf("[INFO] Matriz Primária Extraída: %d rotas mapeadas. (Arquivo: %s)\n", nrow(result_gsea_db_raw_df), raw_filename))
+
+
+        vias_reprovadas <- result_gsea_db_raw_df %>%
+            dplyr::filter(p.adjust >= 0.05 | enrichmentScore <= 0) %>%
+            dplyr::select(ID, enrichmentScore, NES, p.adjust) %>%
+            dplyr::arrange(enrichmentScore)
+        
+        cat(sprintf("[INFO] Filtered out %d pathways (FDR >= 0.05 or NES <= 0)\n",nrow(result_gsea_db_raw_df)))
+        result_gsea_db_filter_df = result_gsea_db_raw_df %>% 
+            dplyr::filter(p.adjust < 0.05, enrichmentScore > 0) %>% 
+            dplyr::arrange(desc(NES))
+            
+        filter_filename = sprintf("%s_gsea_%s_filter.csv", disease,db_name)
+        write.csv(result_gsea_db_filter_df, file=here(output_dir,filter_filename), row.names = FALSE)
+        cat(sprintf("[INFO] Saving results to: %s\n",filter_filename))
+    })
+
+    
+    cat("[INFO] GSEA enrichment pipeline completed successfully.\n")
+
 }
+
+
+
 plot_go_disease_comparison = function() {
     cat("\n[INFO] Loading the object with the 3 variables (MDD, BD, Commons)...\n")
     ora_go = load_rdata(here("src", "Enrichment", "Comparison", "GeneOntology", "RData", "disease_comparison_go_simplify.RData"))
@@ -789,5 +894,31 @@ gsea_bd_reactome = function() {
     return(resultado_reactome)
 }
 
+map_ranked_drug_targets_to_symbols= function(ranked_drug_targets){
+    cat(sprintf("[INFO] Ranked drugs: %d\n",length(ranked_drug_targets)))
+   
+
+    drug_target_df = tibble::tibble(
+            drugbank_id = names(ranked_drug_targets),
+            entrez_id   = ranked_drug_targets) %>%
+        tidyr::unnest(entrez_id)
+
+    cat(sprintf("[INFO] Drug-target interactions: %d\n",nrow(drug_target_df)))
+
+    gene_symbols = AnnotationDbi::mapIds(
+        org.Hs.eg.db,
+        keys=unique(as.character(drug_target_df$entrez_id)),
+        column  = "SYMBOL",
+        keytype = "ENTREZID")
+
+    drug_target_df = drug_target_df %>%
+        dplyr::mutate(symbol = gene_symbols[as.character(entrez_id)]) %>%
+        dplyr::filter(!is.na(symbol)) %>%
+        dplyr::distinct(drugbank_id,entrez_id,symbol)
+    
+    cat(sprintf("[INFO] Expanded %d ranked drugs into %d drug-target unique interactions.\n",length(ranked_drug_targets),nrow(drug_target_df)))
 
 
+    return(drug_target_df)
+
+}
