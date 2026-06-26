@@ -180,3 +180,6 @@ get_clinical_report_data= function(clinicalReportId){
     ))
 }
 
+get_clinical_report_data_safe = purrr::possibly(get_clinical_report_data, otherwise = list(
+    source = NA, url = NA, evidence_summary = "ERRO_NA_REQ"
+))
