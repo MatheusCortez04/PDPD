@@ -40,7 +40,7 @@ get_disease_genes = function(disease = c("MDD", "BD")) {
   disease_gene_df = read.csv(here("src", "Data", "Disease", "disease_genes.csv"))
   
   disease_gene_df = disease_gene_df %>%
-    dplyr::filter(diseaseid == target_disease_id & score >= score_filter,geneid %in%valid_genes) %>%
+    dplyr::filter(diseaseid == target_disease_id & score >= score_filter & geneid %in%valid_genes) %>%
     dplyr::rename(entrez_id = geneid, disease_id = diseaseid) %>% 
     dplyr::select(entrez_id, disease_id, score)
   
