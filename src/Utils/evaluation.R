@@ -46,6 +46,7 @@ evaluation_function_mapper = list(
 )
 
 create_top_drugs_file= function(disease = c("MDD", "BD"),n=10){
+    n = ifelse(is.na(n) ,10,n)
     disease = match.arg(disease)
 
     output_dir = here("src", "Evaluation",disease)
@@ -71,7 +72,7 @@ create_top_drugs_file= function(disease = c("MDD", "BD"),n=10){
         dplyr::ungroup() %>%
         dplyr::mutate(api_response = purrr::map(drugbank_id, get_drug_info_from_dbid)) %>%
         tidyr::unnest_wider(api_response) %>%
-        select(drugbank_id,chembl_id,drug_name,target_count,validation_status)
+        dplyr::select(drugbank_id,chembl_id,drug_name,target_count,validation_status)
 
         cat(sprintf("[INFO] Searching Drug Candidates by OpenTargets to  %s...\n", disease))
         drug_candidates <- get_drug_candidates(disease)
@@ -80,12 +81,11 @@ create_top_drugs_file= function(disease = c("MDD", "BD"),n=10){
             drug_candidates, 
             by = c("chembl_id" = "drug_id"),
         )
-
-        approval_drugs = top_n_joined %>% filter(max_clinical_stage_open_targets=='APPROVAL')
+        approval_drugs = top_n_joined %>% dplyr::filter(max_clinical_stage_open_targets=='APPROVAL')
         approval_drugs_final = approval_drugs %>%
             mutate(report_info = purrr::map(clinical_report_id, get_clinical_report_data)) %>%
-                tidyr::unnest(report_info, names_sep = "_") %>% select(clinical_report_id,report_info_source,report_info_url,report_info_evidence_summary)
-        glimpse(approval_drugs_final)
+                tidyr::unnest(report_info, names_sep = "_") %>% 
+                dplyr::select(clinical_report_id,report_info_source,report_info_url,report_info_evidence_summary)
         top_n_joined = top_n_joined %>% dplyr::left_join(
             approval_drugs_final, 
             by = 'clinical_report_id',
@@ -183,7 +183,8 @@ generate_roc_curve = function(disease = c("MDD", "BD")) {
     dir.create(output_roc_dir, recursive = TRUE, showWarnings = FALSE)
     output_graph_file_name = paste0(file_suffix,"_score_filter_",score_filter,"_roc_curve.pdf")
     output_graph_path = here(output_roc_dir, output_graph_file_name)
-    
+    plot_titles = c("MDD" = paste0("Curva ROC - Transtorno Depressivo"), 
+                    "BD" = paste0("Curva ROC - Transtorno Bipolar"))
     grDevices::pdf(output_graph_path, width = 6, height = 6)
     
     roc_results = reportROC::reportROC(
@@ -191,7 +192,7 @@ generate_roc_curve = function(disease = c("MDD", "BD")) {
          predictor = -1 * prediction_data$average_rank,
          plot = TRUE
     )
-    
+    title(main =plot_titles[disease])
     grDevices::dev.off()
     
     message(sprintf("[SUCCESS] ROC curve saved at: %s", output_graph_path))
@@ -206,8 +207,8 @@ generate_recall_k = function(disease = c("MDD", "BD")) {
     file_suffixes = c("MDD" = "mdd", "BD" = "bipolar")
 
     score_filter = get_score_disease_gene_association()
-    plot_titles = c("MDD" = paste0("Recall@K - Transtorno Depressivo Maior GDA Score >= ",score_filter), 
-                    "BD" = paste0("Recall@K - Transtorno Bipolar GDA Score >= ",score_filter))
+    plot_titles = c("MDD" = paste0("Recall@K - Transtorno Depressivo"), 
+                    "BD" = paste0("Recall@K - Transtorno Bipolar"))
 
     file_suffix = file_suffixes[disease]
     plot_title = plot_titles[disease]
