@@ -345,7 +345,8 @@ over_representation_analysis_by_disease = function(disease = c("MDD", "BD")){
             P.value,
             Adjusted.P.value,
             Combined.Score)
-    
+    graph_title_mapper   = c("MDD" = "Over Representation Analysis - Transtorno Depressivo", "BD" = "Over Representation Analysis - Transtorno Bipolar")
+    graph_title   = graph_title_mapper[disease]
     enrichr_summary <- disease_gene_pathways %>%
         dplyr::group_by(Term) %>%
         dplyr::summarise(
@@ -375,7 +376,7 @@ over_representation_analysis_by_disease = function(disease = c("MDD", "BD")){
         scale_color_gradient(low = "red", high = "blue") +
         theme_minimal() +
         labs(
-            title = paste0("ORA KEGG - All Genes", disease),
+            title = graph_title,
             x = "Gene Ratio",
             y = "KEGG Pathway",
             color = "-log10(adj p-value)",
