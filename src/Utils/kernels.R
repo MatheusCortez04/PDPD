@@ -182,7 +182,7 @@ generate_kernel_menu <- function() {
     ppi_df  =import_ppi_interactions()
     cat("PPI reading complete.\n")
     cat("Creating dataframe with only proteins\n")
-    ppi_only_proteins_df =  ppi_df %>% select(proteinA_entrezid,proteinB_entrezid)
+    ppi_only_proteins_df =  ppi_df %>% dplyr::select(proteinA_entrezid,proteinB_entrezid)
     ppi_graph = generate_graph_from_dataframe(ppi_only_proteins_df)
   while (TRUE) {
     clear_console()
